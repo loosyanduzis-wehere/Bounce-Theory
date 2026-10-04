@@ -86,4 +86,40 @@ The accepted next action may begin while the crossover is still visually traveli
 
 ---
 
+
+## BT-BC-07 — Basic Hesitation Foundation
+
+**Completed:** 2026-10-04  
+**Milestone:** Ball Control Language
+
+### Result
+
+The prototype now supports a basic hesitation action on either hand while preserving the existing rhythm/game-state architecture.
+
+Key behavior includes:
+
+- **A** performs a left-hand hesitation while the left hand owns the ball.
+- **Right Arrow** performs a right-hand hesitation while the right hand owns the ball.
+- Hesitation preserves same-hand ownership.
+- Hesitation has a distinct hold/lift visual behavior rather than reading as a normal pound dribble.
+- Hesitation is treated as an intentional action, not as silence or automatic failure.
+- Pound and crossover controls remain available within the shared rhythm/action system.
+
+### Important Files
+
+- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
+- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
+- `Docs/IMPLEMENTATION_STATUS.md`
+
+### Verification
+
+Automated hesitation validation was added while preserving previous pound, crossover, rhythm, and contact validation.
+
+User Play Mode verification was accepted on 2026-10-04. Left- and right-hand hesitation worked as intended, and existing ball-control actions remained functional.
+
+### Follow-Up
+
+The hesitation should likely become more exaggerated during the animation pass. Possible presentation work includes a stronger body/shoulder sell and a slight lateral player weight shift or step. This should remain visual/readability work and should not change the underlying rhythm authority unless later playtesting identifies a gameplay reason to do so.
+
+---
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
