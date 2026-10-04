@@ -1,0 +1,68 @@
+# Unity-generated folders
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/[Aa]ssets/_Recovery/
+/[Aa]ssets/_Recovery.meta
+
+# IDE and editor state
+/.vs/
+/.vscode/
+/.idea/
+/.gradle/
+/.consulo/
+ExportedObj/
+
+# Unity-generated solution and project files
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.vsconfig
+
+# Generated debug-symbol metadata
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Unity crash and diagnostic output
+sysinfo.txt
+crashlytics-build.properties
+mono_crash.*
+*.stacktrace
+
+# Builds and packages
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Asset Store tools are machine-local imports
+/[Aa]ssets/AssetStoreTools*
+
+# Addressables build output
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/[Aa]ssets/[Ss]treaming[Aa]ssets/aa.meta
+/[Aa]ssets/[Ss]treaming[Aa]ssets/aa/*
