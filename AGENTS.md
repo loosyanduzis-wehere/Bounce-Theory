@@ -98,6 +98,19 @@ After a task is confirmed `COMPLETE`:
 
 ## Git Workflow
 
+### Before Starting Any Task
+
+When a Git remote/upstream is configured, synchronize the current branch before implementation:
+
+1. Run `git status`.
+2. If there are unexpected uncommitted changes, do **not** pull, overwrite, stash, reset, or discard them automatically. Stop and report them.
+3. Confirm the current branch is the intended working branch.
+4. Run `git fetch origin`.
+5. Run `git pull --ff-only origin <current-branch>`.
+6. Only after the branch is synchronized should implementation begin.
+
+Use `--ff-only` so a routine task start does not silently create a merge commit. If the pull cannot fast-forward, stop and report the branch state rather than resolving history automatically.
+
 The intended branch model is:
 
 ```text

@@ -2,12 +2,12 @@
 
 **Status:** Active prototype  
 **Completed milestone:** Core Rhythm + Pound Dribble Foundation  
-**Next planned milestone:** Ball Control Language  
-**Current task:** None — waiting for one task to be promoted  
+**Next planned milestone:** Stance  
+**Current task:** None — milestone transition pending  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
-**Current branch at handoff:** `main`  
+**Current branch at handoff:** `milestone/ball-control`  
 **Project path:** `C:\Users\jerry\Bounce Theory v2`  
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
@@ -129,8 +129,6 @@ User Play Mode verification was accepted on 2026-10-04.
 These are not implemented merely because they appear in design or roadmap:
 
 - Full crossover behavior
-- Hesitation behavior
-- Behind-the-back behavior
 - Complete stance system
 - Full dribble branching/state machine
 - Defender lean/recovery/reach/overcommit behavior
@@ -161,23 +159,32 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ## 5. Current Task
 
-### No Active Task
+### No Active Task — Milestone Transition
 
 **Task ID:** None  
 **Status:** None
 
-No new gameplay work is authorized yet.
+`BT-BC-08 — Basic Behind-the-Back Foundation` passed user Play Mode verification on 2026-10-04.
 
-Before another implementation task begins:
+The initial core dribble vocabulary is now working:
 
-1. Select the next roadmap item with the user.
-2. Resolve any design questions that materially affect implementation.
-3. Promote exactly one concrete task into this section.
-4. Give it a stable task ID.
-5. Define acceptance criteria.
-6. Define anything explicitly out of scope.
+- Pound
+- Crossover
+- Hesitation
+- Behind-the-back
 
-Codex must **not** select a future task for itself.
+The next planned milestone is **Stance**.
+
+Per `AGENTS.md`, do not merge `milestone/ball-control` into `dev` and do not begin a new milestone branch without explicit user approval.
+
+Once the milestone transition is approved, the first recommended stance task is a small foundation task:
+
+- add explicit Low / Medium / High stance state,
+- default to Medium,
+- implement plain Space flow: `Medium → Low → Medium → High → Medium → Low...`,
+- keep Space + dribble modifiers out of that first task.
+
+Codex must not start stance implementation while this section says no active task.
 
 ---
 

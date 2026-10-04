@@ -28,16 +28,19 @@ Key completed task:
 
 ## Milestone 2 — Ball Control Language
 
-**Status:** PLANNED
+**Status:** CORE VOCABULARY COMPLETE
+
+Completed:
+
+- Basic crossover foundation — `BT-BC-06`
+- Basic hesitation foundation — `BT-BC-07`
+- Basic behind-the-back foundation — `BT-BC-08`
 
 Planned areas:
-
-- Crossover
-- Hesitation
-- Behind-the-back
 - Ball-state branching
 - Legal follow-up transitions
 - Interaction between rhythmic intervals and different dribble actions
+- Revisit continuation/grace timing after the ball returns to control; current behavior ends the active dribble sequence if the player does not continue in time. Preserve the possibility of a gathered/dead-ball consequence, but later test whether Easy should allow additional late input grace without weakening rhythm scoring.
 
 Do not implement all of these as one task. Promote one small task at a time into `IMPLEMENTATION_STATUS.md`.
 
@@ -47,13 +50,25 @@ Do not implement all of these as one task. Promote one small task at a time into
 
 **Status:** PLANNED
 
+Working control design:
+
+- Three stances: Low / Medium / High
+- Medium is the neutral/home stance
+- Plain Space flow: Medium → Low → Medium → High → Medium → Low...
+- Space + Crossover → Low
+- Space + Pound → Medium
+- Space + Hesitation → High
+- Space + Behind-the-back has no assigned stance destination yet
+
 Planned areas:
 
 - Mid-dribble stance changes
-- Stance effects on rhythm
-- Stance effects on trajectory
-- Stance effects on exposure
-- Stance-dependent follow-up actions
+- Implement quick Space stance flow
+- Implement Space + dribble stance modifiers
+- Define stance effects on rhythm
+- Define stance effects on trajectory
+- Define stance effects on exposure
+- Define stance-dependent follow-up actions
 
 ---
 
@@ -109,6 +124,8 @@ Planned areas:
 
 - Replace prototype visual motion with polished animation
 - Preserve rhythm/game-state authority underneath animation
+- Blend or redirect visual ball motion when a new valid action is accepted before the previous motion visually finishes; do not solve this with gameplay input locks
+- Exaggerate hesitation presentation with body/shoulder selling and potentially a slight lateral weight shift or step while preserving rhythm authority
 - Expand expressive and intentionally outrageous finishes
 
 ---

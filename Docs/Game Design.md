@@ -143,7 +143,7 @@ The keyboard mirrors the player's two hands.
 | **D** | Crossover toward opposite hand | **Left Arrow** |
 | **A** | Hesitation | **Right Arrow** |
 | **S** | Behind-the-back | **Down Arrow** |
-| **Space** | Change stance | **Space** |
+| **Space** | Stance control / modifier | **Space** |
 
 The exact controller mapping remains open and should eventually mirror the same conceptual two-hand language.
 
@@ -305,9 +305,39 @@ The game should prefer readable, expressive motion over rigid physical realism d
 
 ## 9. Stance
 
-**Space changes stance.**
+Bounce Theory uses three working stance states:
 
-Stance can change during a dribble rather than only between actions.
+- **Low**
+- **Medium**
+- **High**
+
+**Medium is the neutral/home stance.**
+
+### Quick stance flow — Space
+
+A plain **Space** press moves through the stance flow without opening a menu:
+
+`Medium → Low → Medium → High → Medium → Low → ...`
+
+Low and High therefore return to Medium with one Space press. From Medium, the next extreme alternates between Low and High based on the previous extreme.
+
+This keeps stance changes fast enough to happen inside the dribble rhythm instead of requiring a selection menu.
+
+### Direct stance modifier — Space + dribble action
+
+Space can also modify a dribble action to move directly toward a stance while the basketball action still occurs:
+
+- **Space + Crossover → Low stance**
+- **Space + Pound → Medium stance**
+- **Space + Hesitation → High stance**
+
+These destinations are consistent regardless of the starting stance. If the player is already in the destination stance, the dribble action still occurs without requiring a stance change.
+
+No special stance destination is currently assigned to **Space + Behind-the-back**. Do not invent one until the design gives it a purpose.
+
+### Stance timing principle
+
+Stance can change during an active dribble sequence. A stance transition should not require the current visual animation to finish before valid rhythmic input can be considered.
 
 Stance may affect:
 
@@ -320,7 +350,7 @@ Stance may affect:
 - Defender reaction
 - Animation style
 
-Possible stance categories are still open. Early prototypes may use simple Low / Normal / High states, but these are not locked.
+The exact gameplay effects of Low, Medium, and High remain prototype tuning questions. Their three-state identity and the keyboard stance-control language above are now the working design.
 
 ---
 
@@ -516,7 +546,10 @@ Implement:
 - D / Left = crossover
 - A / Right = hesitation
 - S / Down = behind-the-back
-- Space = stance change
+- Space = quick stance flow: Medium → Low → Medium → High → Medium → Low...
+- Space + Crossover = Low stance
+- Space + Pound = Medium stance
+- Space + Hesitation = High stance
 
 Begin with only the simplest moves necessary to validate the input language.
 
@@ -577,7 +610,9 @@ These are the strongest current design decisions:
 - D / Left = crossover.
 - A / Right = hesitation.
 - S / Down = behind-the-back.
-- Space changes stance.
+- Stance states are Low, Medium, and High, with Medium as the neutral/home stance.
+- Plain Space follows Medium → Low → Medium → High → Medium → Low...
+- Space + Crossover targets Low, Space + Pound targets Medium, and Space + Hesitation targets High while still performing the dribble action.
 - Stance can change during a dribble.
 - Timing affects ball control, sound, vulnerability, and defender opportunity.
 - Defender lean and recovery should be readable and exploitable.
@@ -600,7 +635,6 @@ These should remain prototype decisions rather than locked assumptions:
 - Whether the game judges against a global grid, inferred interval choices, or a hybrid of both
 - Player/system timing calibration and latency compensation
 - Whether rhythm is fixed, dynamic, or player-created from the beginning of advanced play
-- Exact stance categories
 - Exact controller mapping
 - Exact timing-window sizes
 - Exact ball trajectories
