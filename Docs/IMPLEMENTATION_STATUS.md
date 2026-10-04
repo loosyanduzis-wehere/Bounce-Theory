@@ -3,7 +3,7 @@
 **Status:** Active prototype  
 **Completed milestone:** Core Rhythm + Pound Dribble Foundation  
 **Next planned milestone:** Ball Control Language  
-**Current task:** `BT-BC-07 — Basic Hesitation Foundation`  
+**Current task:** None — waiting for one task to be promoted  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
@@ -129,7 +129,6 @@ User Play Mode verification was accepted on 2026-10-04.
 These are not implemented merely because they appear in design or roadmap:
 
 - Full crossover behavior
-- Hesitation behavior
 - Behind-the-back behavior
 - Complete stance system
 - Full dribble branching/state machine
@@ -159,102 +158,26 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ---
 
-## 5. Current Task — BT-BC-07
+## 5. Current Task
 
-**Title:** Basic Hesitation Foundation  
-**Status:** AWAITING PLAYTEST
+### No Active Task
 
-### Goal
+**Task ID:** None  
+**Status:** None
 
-Add the first functional hesitation action so the player can interrupt the normal dribble cadence with a readable same-hand hesitation while remaining inside Bounce Theory's existing rhythm/game-state architecture.
+No new gameplay work is authorized yet.
 
-The hesitation should establish the idea that intentional space or delay can be a valid basketball action rather than automatically being treated as missed input or broken rhythm.
+`BT-BC-07 — Basic Hesitation Foundation` passed user Play Mode verification on 2026-10-04 and is recorded in `Docs/COMPLETED_TASKS.md`.
 
-### Why This Task Exists
+Before Codex performs another implementation:
 
-The prototype now supports pound dribbles and crossovers. Hesitation is the next distinct ball-control action because it tests a different design requirement: an action can intentionally create space in the rhythm without changing hand ownership.
+1. Select the next Roadmap item with the user.
+2. Resolve any design questions that materially affect implementation.
+3. Promote exactly one concrete task into this section.
+4. Give it a stable task ID.
+5. Define acceptance criteria and explicit out-of-scope items.
 
-This task should prove the basic hesitation language without locking final timing, animation, stance effects, defender reactions, or long-term gather rules.
-
-### Scope
-
-- Support the keyboard hesitation inputs defined by the Source of Truth:
-  - **A** when the left hand controls the ball = left-hand hesitation.
-  - **Right Arrow** when the right hand controls the ball = right-hand hesitation.
-- Keep logical hand ownership on the same hand through the hesitation.
-- Give the hesitation a clearly readable visual pause/hold or change of ball motion distinct from a normal pound dribble.
-- Treat the hesitation as an intentional gameplay action, not as silence/failure.
-- Preserve the shared DSP/rhythm judgment architecture and existing action-decision flow.
-- Allow valid rhythmically/physically legal follow-up input to be considered without waiting for all visual motion to finish.
-- Preserve pound-dribble and crossover behavior.
-- Add targeted validation for left-hand and right-hand hesitation behavior where practical.
-
-The exact hesitation duration, ball height, pause shape, rhythmic interval, and final animation remain prototype tuning choices.
-
-### Relevant Files / Systems
-
-Likely relevant:
-
-- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
-- `Assets/BounceTheory/Scripts/RhythmClock.cs`
-- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
-- `Assets/Scenes/BounceTheoryPrototype.unity`
-
-Codex must inspect the existing action flow before deciding which files actually need changes.
-
-### Acceptance Criteria
-
-- [ ] With the ball controlled by the left hand, pressing **A** can initiate a left-hand hesitation.
-- [ ] With the ball controlled by the right hand, pressing **Right Arrow** can initiate a right-hand hesitation.
-- [ ] Hesitation preserves logical ownership of the current hand.
-- [ ] Hesitation is visually distinguishable from a normal pound dribble and from a crossover.
-- [ ] Hesitation is treated as an intentional action rather than a missed/no-input state.
-- [ ] Hesitation uses the existing shared rhythm/game-state architecture rather than a separate timing system.
-- [ ] A valid follow-up action is not blocked solely because the hesitation's visual motion has not completely finished.
-- [ ] Existing **W / Up Arrow** pound dribbles still work.
-- [ ] Existing **D / Left Arrow** crossovers still work.
-- [ ] Existing rhythm/contact validators remain intact.
-- [ ] No conventional player locomotion is introduced.
-- [ ] Project compiles with no new errors.
-
-### Out of Scope
-
-Do **not** implement during this task:
-
-- Behind-the-back
-- Stance changes
-- Defender reactions or steals
-- Final hesitation timing values
-- Permanent hesitation-to-rhythm interval mapping
-- Gather/travel/double-dribble rules
-- Full unresolved-bounce logic
-- Finish/shooting logic
-- Possession scoring
-- Full final dribble state-machine redesign
-- Final animation or animation blending
-- Unrelated SceneBuilder cleanup/refactor
-
-### Verification Required
-
-Automated:
-
-- [ ] Project compiles.
-- [ ] Existing pound, crossover, rhythm, and contact validators still pass.
-- [ ] Add or run targeted checks for left-hand and right-hand hesitation.
-- [ ] Verify hesitation preserves hand ownership.
-- [ ] Verify hesitation uses the existing action/rhythm path.
-- [ ] Review `git diff`.
-- [ ] Confirm unrelated files were not changed.
-
-User/manual:
-
-- [ ] In Play Mode, verify **A** creates a readable hesitation while left owns the ball.
-- [ ] In Play Mode, verify **Right Arrow** creates a readable hesitation while right owns the ball.
-- [ ] Confirm hesitation feels meaningfully different from simply doing nothing.
-- [ ] Confirm pound and crossover controls still behave as before.
-- [ ] Try a follow-up pound or crossover during/after the hesitation and confirm the rhythm remains responsive.
-
-Codex should stop at `AWAITING PLAYTEST` after automated verification and push the implementation for user testing.
+Codex must **not** select a future task for itself.
 
 ---
 
