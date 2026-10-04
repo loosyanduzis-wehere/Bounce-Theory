@@ -3,7 +3,7 @@
 **Status:** Active prototype  
 **Completed milestone:** Core Rhythm + Pound Dribble Foundation  
 **Next planned milestone:** Ball Control Language  
-**Current task:** None — waiting for one task to be promoted  
+**Current task:** `BT-BC-08 — Basic Behind-the-Back Foundation`  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
@@ -158,26 +158,97 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ---
 
-## 5. Current Task
+## 5. Current Task — BT-BC-08
 
-### No Active Task
+**Title:** Basic Behind-the-Back Foundation  
+**Status:** PLANNED
 
-**Task ID:** None  
-**Status:** None
+### Goal
 
-No new gameplay work is authorized yet.
+Add the first functional behind-the-back dribble so the ball can transfer from the currently controlling hand to the opposite hand through a distinct behind-the-body path while preserving Bounce Theory's existing rhythm/contact architecture.
 
-`BT-BC-07 — Basic Hesitation Foundation` passed user Play Mode verification on 2026-10-04 and is recorded in `Docs/COMPLETED_TASKS.md`.
+This task should complete the initial core dribble vocabulary before the project moves into stance and deeper ball-state branching.
 
-Before Codex performs another implementation:
+### Why This Task Exists
 
-1. Select the next Roadmap item with the user.
-2. Resolve any design questions that materially affect implementation.
-3. Promote exactly one concrete task into this section.
-4. Give it a stable task ID.
-5. Define acceptance criteria and explicit out-of-scope items.
+The current prototype already supports pound dribbles, crossovers, and hesitations. Behind-the-back is the remaining core dribble action in the current keyboard language.
 
-Codex must **not** select a future task for itself.
+It should reuse the same shared rhythm and contact-planning architecture while creating a clearly different spatial path from the crossover.
+
+### Scope
+
+- Support the keyboard behind-the-back inputs defined by the Source of Truth:
+  - **S** when the left hand controls the ball = behind-the-back toward the right hand.
+  - **Down Arrow** when the right hand controls the ball = behind-the-back toward the left hand.
+- Transfer logical hand ownership to the opposite hand when the move successfully resolves.
+- Give the ball a clearly readable behind-the-body/lateral path distinct from the crossover.
+- Reuse the existing DSP timestamp, rhythm judgment, target-contact planning, and global rhythm grid.
+- Preserve the rule that valid input is not gated solely by visual animation completion.
+- Preserve pound, crossover, and hesitation behavior.
+- Add targeted validation for both behind-the-back directions where practical.
+
+The exact final arc, body-relative path, timing interval, player animation, and visual exaggeration remain prototype tuning choices.
+
+### Relevant Files / Systems
+
+Likely relevant:
+
+- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
+- `Assets/BounceTheory/Scripts/RhythmClock.cs`
+- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
+- `Assets/Scenes/BounceTheoryPrototype.unity`
+
+Codex must inspect the existing action flow before deciding which files actually need changes.
+
+### Acceptance Criteria
+
+- [ ] With the ball controlled by the left hand, pressing **S** can initiate a behind-the-back dribble toward the right hand.
+- [ ] With the ball controlled by the right hand, pressing **Down Arrow** can initiate a behind-the-back dribble toward the left hand.
+- [ ] A successful behind-the-back finishes with logical ball ownership in the opposite hand.
+- [ ] The ball path is visually distinguishable from both a pound dribble and a crossover.
+- [ ] Behind-the-back uses the existing shared DSP/global rhythm/contact architecture.
+- [ ] A valid follow-up action is not blocked solely because the behind-the-back visual motion has not fully completed.
+- [ ] Existing **W / Up Arrow** pound dribbles still work.
+- [ ] Existing **D / Left Arrow** crossovers still work.
+- [ ] Existing **A / Right Arrow** hesitations still work.
+- [ ] Existing rhythm/contact validators remain intact.
+- [ ] No conventional player locomotion is introduced.
+- [ ] Project compiles with no new errors.
+
+### Out of Scope
+
+Do **not** implement during this task:
+
+- Stance changes
+- Defender reactions or steals
+- Final behind-the-back animation/polish
+- Permanent move-to-rhythm interval assignment
+- Full ball-state branching redesign
+- Gather/travel/double-dribble rules
+- Finish/shooting logic
+- Possession scoring
+- Unrelated SceneBuilder cleanup/refactor
+
+### Verification Required
+
+Automated:
+
+- [ ] Project compiles.
+- [ ] Existing pound, crossover, hesitation, rhythm, and contact validators still pass.
+- [ ] Add or run targeted checks for left-to-right and right-to-left behind-the-back transfer.
+- [ ] Confirm behind-the-back uses the existing action/rhythm/contact path.
+- [ ] Review `git diff`.
+- [ ] Confirm unrelated files were not changed.
+
+User/manual:
+
+- [ ] In Play Mode, verify **S** performs left → right behind-the-back.
+- [ ] In Play Mode, verify **Down Arrow** performs right → left behind-the-back.
+- [ ] Confirm the path reads differently from a normal crossover.
+- [ ] Confirm pound, crossover, and hesitation controls still behave as before.
+- [ ] Try a follow-up pound or crossover during/after the move and confirm the rhythm remains responsive.
+
+Codex should stop at `AWAITING PLAYTEST` after automated verification and push the implementation for user testing.
 
 ---
 
