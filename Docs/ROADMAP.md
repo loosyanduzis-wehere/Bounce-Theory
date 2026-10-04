@@ -28,18 +28,19 @@ Key completed task:
 
 ## Milestone 2 — Ball Control Language
 
-**Status:** IN PROGRESS
+**Status:** CORE VOCABULARY COMPLETE
 
 Completed:
 
 - Basic crossover foundation — `BT-BC-06`
 - Basic hesitation foundation — `BT-BC-07`
+- Basic behind-the-back foundation — `BT-BC-08`
 
 Planned areas:
-- Behind-the-back
 - Ball-state branching
 - Legal follow-up transitions
 - Interaction between rhythmic intervals and different dribble actions
+- Revisit continuation/grace timing after the ball returns to control; current behavior ends the active dribble sequence if the player does not continue in time. Preserve the possibility of a gathered/dead-ball consequence, but later test whether Easy should allow additional late input grace without weakening rhythm scoring.
 
 Do not implement all of these as one task. Promote one small task at a time into `IMPLEMENTATION_STATUS.md`.
 
