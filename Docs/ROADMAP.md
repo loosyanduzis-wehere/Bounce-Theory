@@ -33,10 +33,9 @@ Key completed task:
 Completed:
 
 - Basic crossover foundation — `BT-BC-06`
+- Basic hesitation foundation — `BT-BC-07`
 
 Planned areas:
-
-- Hesitation
 - Behind-the-back
 - Ball-state branching
 - Legal follow-up transitions
@@ -113,6 +112,7 @@ Planned areas:
 - Replace prototype visual motion with polished animation
 - Preserve rhythm/game-state authority underneath animation
 - Blend or redirect visual ball motion when a new valid action is accepted before the previous motion visually finishes; do not solve this with gameplay input locks
+- Exaggerate hesitation presentation with body/shoulder selling and potentially a slight lateral weight shift or step while preserving rhythm authority
 - Expand expressive and intentionally outrageous finishes
 
 ---
