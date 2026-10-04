@@ -65,3 +65,29 @@ The older conventional-movement prototype should remain a separate reference/fou
 ### Why
 
 Bounce Theory's core interaction is timed hand/dribble language, defender manipulation, and rhythm. Conventional navigation would move the prototype toward a different game before the core rhythm interaction is proven.
+
+---
+
+## Decision 004 — Stance Uses Fast Three-State Controls Instead of a Menu
+
+**Status:** Active
+
+### Decision
+
+Bounce Theory uses three working stance states: **Low**, **Medium**, and **High**, with Medium as the neutral/home stance.
+
+A plain **Space** press follows this quick stance flow:
+
+`Medium → Low → Medium → High → Medium → Low → ...`
+
+Space also acts as a stance modifier while the associated dribble action still occurs:
+
+- **Space + Crossover → Low**
+- **Space + Pound → Medium**
+- **Space + Hesitation → High**
+
+`Space + Behind-the-back` has no dedicated stance destination yet and should remain unassigned until a gameplay purpose is designed.
+
+### Why
+
+Bounce Theory's dribble language moves too quickly for a stance-selection menu to feel natural. The stance controls should remain playable inside the rhythm. Returning through Medium keeps the plain-Space flow readable, while modified dribble inputs give direct stance access without creating a separate menu or pausing basketball action.
