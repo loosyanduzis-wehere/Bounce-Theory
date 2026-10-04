@@ -162,7 +162,7 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 ## 5. Current Task — BT-BC-06
 
 **Title:** Basic Crossover Foundation  
-**Status:** PLANNED
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 

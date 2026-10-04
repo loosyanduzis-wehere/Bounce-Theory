@@ -552,6 +552,60 @@ namespace BounceTheory.Editor
             Debug.Log($"Bounce Theory Chunk 4.75 validation passed: normal and compressed descents reach explicit grid-aligned DSP contact targets; input/contact times are independent; 0.5-beat contact interrupts the visual return; missed targets reject explicitly; actual contact error was {controller.LastContactErrorMilliseconds:+0.00;-0.00;0.00} ms in the final scheduled-contact sample.");
         }
 
+        [MenuItem("Bounce Theory/Validate BT-BC-06 Basic Crossover")]
+        public static void ValidateBasicCrossover()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var errors = new List<string>();
+            GameObject offense = Required("OffensivePlayer", errors);
+            GameObject defender = Required("Defender", errors);
+            GameObject ball = Required("Basketball", errors);
+            GameObject cameraObject = Required("Main Camera", errors);
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            Transform leftAnchor = offense ? offense.transform.Find("LeftHandBallAnchor") : null;
+            Transform rightAnchor = offense ? offense.transform.Find("RightHandBallAnchor") : null;
+            Transform contact = prototype ? prototype.Find("BallFloorContactIndicator") : null;
+
+            if (!clock) errors.Add("Reusable RhythmClock is missing.");
+            if (!controller) errors.Add("PoundDribbleController is missing.");
+            if (controller && controller.RhythmClock != clock) errors.Add("Crossover does not use the shared RhythmClock.");
+            if (!leftAnchor) errors.Add("LeftHandBallAnchor is missing.");
+            if (!rightAnchor) errors.Add("RightHandBallAnchor is missing.");
+            if (!contact) errors.Add("BallFloorContactIndicator is missing.");
+            if (UnityEngine.Object.FindObjectsByType<PoundDribbleController>(FindObjectsSortMode.None).Length != 1)
+                errors.Add("The scene does not contain exactly one authoritative basketball controller.");
+            if (UnityEngine.Object.FindAnyObjectByType<Rigidbody>()) errors.Add("A Rigidbody was introduced.");
+            if (UnityEngine.Object.FindAnyObjectByType<CharacterController>()) errors.Add("A CharacterController was introduced.");
+
+            if (controller && clock && leftAnchor && rightAnchor && contact)
+            {
+                Vector3 offensePosition = offense.transform.position;
+                Vector3 defenderPosition = defender.transform.position;
+                Vector3 cameraPosition = cameraObject.transform.position;
+                Quaternion cameraRotation = cameraObject.transform.rotation;
+
+                ValidateHandCycle(controller, BallHand.Left, leftAnchor, true, contact.gameObject, errors);
+                ValidateHandCycle(controller, BallHand.Right, rightAnchor, false, contact.gameObject, errors);
+                ValidateCrossoverCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateCrossoverCycle(controller, clock, BallHand.Right, rightAnchor, leftAnchor, errors);
+                ValidateCrossoverDuringReturn(controller, clock, errors);
+                ValidatePendingInputAuthority(controller, clock, errors);
+                ValidateTargetContactScheduling(controller, clock, errors);
+
+                AssertStill("OffensivePlayer", offensePosition, offense.transform.position, errors);
+                AssertStill("Defender", defenderPosition, defender.transform.position, errors);
+                AssertStill("Main Camera", cameraPosition, cameraObject.transform.position, errors);
+                if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                    errors.Add("Main Camera rotation changed during crossover validation.");
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException("BT-BC-06 validation failed:\n- " + string.Join("\n- ", errors));
+            Debug.Log("BT-BC-06 validation passed: D crosses left-to-right, Left Arrow crosses right-to-left, ownership transfers at floor contact, the path travels laterally across the body, crossover follow-up can begin during a prior return, shared DSP contact planning is preserved, pound regressions pass, and scene subjects remain stationary.");
+        }
+
         public static void CapturePreview()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -1000,6 +1054,101 @@ namespace BounceTheory.Editor
             if (controller.MotionMode != BounceMotionMode.Unreachable ||
                 !(controller.LastInputDecision.Contains("passed") || controller.LastInputDecision.Contains("unreachable")))
                 errors.Add("Missed physical target did not report an explicit Unreachable failure.");
+        }
+
+        private static void ValidateCrossoverCycle(PoundDribbleController controller, RhythmClock clock, BallHand sourceHand,
+            Transform sourceAnchor, Transform targetAnchor, ICollection<string> errors)
+        {
+            controller.ResetToStartingHand();
+            controller.SetStartingHand(sourceHand);
+            clock.ResetBallEventHistory();
+            int judgmentsBefore = controller.TimingJudgmentCount;
+            int dribblesBefore = controller.CompletedDribbleCount;
+            int crossoversBefore = controller.CompletedCrossoverCount;
+            bool sourceIsLeft = sourceHand == BallHand.Left;
+
+            bool inactiveAccepted = sourceIsLeft
+                ? controller.ProcessCrossoverInputAtRhythmTime(false, true, 0)
+                : controller.ProcessCrossoverInputAtRhythmTime(true, false, 0);
+            if (inactiveAccepted) errors.Add(sourceHand + " ownership accepted crossover input from the inactive hand.");
+            if (controller.TimingJudgmentCount != judgmentsBefore)
+                errors.Add(sourceHand + " inactive crossover input created a timing judgment.");
+
+            double idealInput = clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds;
+            bool accepted = sourceIsLeft
+                ? controller.ProcessCrossoverInputAtRhythmTime(true, false, idealInput)
+                : controller.ProcessCrossoverInputAtRhythmTime(false, true, idealInput);
+            if (!accepted) errors.Add(sourceHand + " crossover input was not accepted.");
+            if (controller.ActiveAction != DribbleAction.Crossover)
+                errors.Add(sourceHand + " crossover did not enter the shared action/contact path.");
+            if (controller.ActiveContactPlan.TargetContactDspTimestamp <= controller.ActiveContactPlan.InputDspTimestamp)
+                errors.Add(sourceHand + " crossover has no future DSP floor-contact target.");
+
+            bool sawFloorContact = false;
+            Vector3 contactPosition = sourceAnchor.position;
+            BallHand expectedHand = sourceIsLeft ? BallHand.Right : BallHand.Left;
+            for (int i = 0; i < 1000 && controller.IsDribbling; i++)
+            {
+                controller.Tick(.005f);
+                if (controller.LogicalPhase == BallLogicalPhase.FloorContact)
+                {
+                    sawFloorContact = true;
+                    contactPosition = controller.transform.position;
+                    if (controller.CurrentHand != expectedHand)
+                        errors.Add(sourceHand + " crossover did not transfer ownership at floor contact.");
+                }
+            }
+
+            if (controller.IsDribbling) errors.Add(sourceHand + " crossover did not complete.");
+            if (!sawFloorContact) errors.Add(sourceHand + " crossover never reached floor contact.");
+            if (Mathf.Abs(contactPosition.x - sourceAnchor.position.x) < .25f)
+                errors.Add(sourceHand + " crossover floor contact did not move laterally across the body.");
+            if (controller.CurrentHand != expectedHand)
+                errors.Add(sourceHand + " crossover did not finish with opposite-hand ownership.");
+            if (Vector3.Distance(controller.transform.position, targetAnchor.position) > .001f)
+                errors.Add(sourceHand + " crossover did not finish at the opposite-hand anchor.");
+            if (controller.CompletedDribbleCount != dribblesBefore + 1 || controller.CompletedCrossoverCount != crossoversBefore + 1)
+                errors.Add(sourceHand + " crossover did not register exactly one completed crossover contact.");
+            if (controller.TimingJudgmentCount != judgmentsBefore + 1)
+                errors.Add(sourceHand + " crossover did not receive exactly one timing judgment.");
+        }
+
+        private static void ValidateCrossoverDuringReturn(PoundDribbleController controller, RhythmClock clock,
+            ICollection<string> errors)
+        {
+            controller.ResetToStartingHand();
+            controller.SetStartingHand(BallHand.Left);
+            clock.ResetBallEventHistory();
+            double firstInput = clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds;
+            if (!controller.ProcessInputAtRhythmTime(true, false, firstInput))
+            {
+                errors.Add("Return-overlap setup pound was not accepted.");
+                return;
+            }
+
+            for (int i = 0; i < 500 && controller.LogicalPhase != BallLogicalPhase.Returning; i++) controller.Tick(.005f);
+            if (controller.LogicalPhase != BallLogicalPhase.Returning)
+            {
+                errors.Add("Return-overlap setup did not reach Returning.");
+                return;
+            }
+
+            const float returnOverlapSeconds = .20f;
+            controller.Tick(returnOverlapSeconds);
+            if (controller.LogicalPhase != BallLogicalPhase.Returning)
+            {
+                errors.Add("Return-overlap setup completed before the crossover input was tested.");
+                return;
+            }
+
+            double overlapInput = clock.ElapsedSecondsAtDspTime(controller.LastActualFloorContactDsp) + returnOverlapSeconds;
+            if (!controller.ProcessCrossoverInputAtRhythmTime(true, false, overlapInput))
+                errors.Add("Rhythmically valid crossover was blocked during the prior visual return.");
+            if (controller.ActiveAction != DribbleAction.Crossover || controller.LogicalPhase != BallLogicalPhase.Descending)
+                errors.Add("Crossover follow-up waited for the prior return animation to complete.");
+            CompleteCurrentDribble(controller, errors);
+            if (controller.CurrentHand != BallHand.Right)
+                errors.Add("Return-overlap crossover did not resolve to the right hand.");
         }
 
         private static void CompleteCurrentDribble(PoundDribbleController controller, ICollection<string> errors)
