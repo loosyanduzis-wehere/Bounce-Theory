@@ -8,6 +8,7 @@ namespace BounceTheory
     public enum BallLogicalPhase { Controlled, Descending, FloorContact, Returning }
     public enum BounceMotionMode { Normal, Compressed, Unreachable }
     public enum DribbleAction { Pound, Crossover, Hesitation, BehindTheBack }
+    public enum PlayerStance { Low, Medium, High }
 
     /// <summary>Rhythm input is authoritative; one judged follow-up may wait for Controlled.</summary>
     public sealed class PoundDribbleController : MonoBehaviour
@@ -71,6 +72,8 @@ namespace BounceTheory
         [SerializeField] private bool logStateChanges = true;
 
         private BallHand currentHand;
+        private PlayerStance currentStance = PlayerStance.Medium;
+        private PlayerStance nextExtremeFromMedium = PlayerStance.Low;
         private BallLogicalPhase logicalPhase = BallLogicalPhase.Controlled;
         private float visualPhaseElapsed;
         private double simulatedElapsedCursor;
@@ -105,6 +108,8 @@ namespace BounceTheory
 
         public BallHand StartingHand => startingHand;
         public BallHand CurrentHand => currentHand;
+        public PlayerStance CurrentStance => currentStance;
+        public PlayerStance NextExtremeFromMedium => nextExtremeFromMedium;
         public BallLogicalPhase LogicalPhase => logicalPhase;
         public bool IsDribbling => logicalPhase != BallLogicalPhase.Controlled;
         public bool HasPendingInput => hasPendingInput;
@@ -172,6 +177,8 @@ namespace BounceTheory
             if (!Application.isPlaying)
             {
                 currentHand = startingHand;
+                currentStance = PlayerStance.Medium;
+                nextExtremeFromMedium = PlayerStance.Low;
                 logicalPhase = BallLogicalPhase.Controlled;
                 ClearPendingInput();
                 SetContactIndicator(false);
@@ -184,6 +191,15 @@ namespace BounceTheory
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null)
             {
+                bool poundPressed = keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame;
+                bool crossoverPressed = keyboard.dKey.wasPressedThisFrame || keyboard.leftArrowKey.wasPressedThisFrame;
+                bool hesitationPressed = keyboard.aKey.wasPressedThisFrame || keyboard.rightArrowKey.wasPressedThisFrame;
+                bool behindBackPressed = keyboard.sKey.wasPressedThisFrame || keyboard.downArrowKey.wasPressedThisFrame;
+                bool anyDribblePressed = poundPressed || crossoverPressed || hesitationPressed || behindBackPressed;
+
+                if (keyboard.spaceKey.wasPressedThisFrame && !anyDribblePressed)
+                    AdvanceStance();
+
                 bool actionAccepted = ProcessInput(keyboard.wKey.wasPressedThisFrame, keyboard.upArrowKey.wasPressedThisFrame);
                 if (!actionAccepted)
                     actionAccepted = ProcessCrossoverInput(keyboard.dKey.wasPressedThisFrame, keyboard.leftArrowKey.wasPressedThisFrame);
@@ -325,6 +341,21 @@ namespace BounceTheory
             if (returnT >= 1f) CompleteDribble();
         }
 
+        public void AdvanceStance()
+        {
+            if (currentStance == PlayerStance.Medium)
+            {
+                currentStance = nextExtremeFromMedium;
+                nextExtremeFromMedium = currentStance == PlayerStance.Low ? PlayerStance.High : PlayerStance.Low;
+            }
+            else
+            {
+                currentStance = PlayerStance.Medium;
+            }
+
+            Log($"stance changed to {currentStance}");
+        }
+
         public void SetStartingHand(BallHand hand)
         {
             if (IsDribbling) return;
@@ -339,6 +370,8 @@ namespace BounceTheory
             visualPhaseElapsed = 0f;
             simulatedElapsedCursor = 0;
             currentHand = startingHand;
+            currentStance = PlayerStance.Medium;
+            nextExtremeFromMedium = PlayerStance.Low;
             activeContactPlan = default;
             activeAction = DribbleAction.Pound;
             activeSourceHand = currentHand;
@@ -672,7 +705,7 @@ namespace BounceTheory
             if (!showDebugOverlay) return;
             const float width = 540f;
             GUI.Box(new Rect(18, 18, width, 414), "Bounce Theory — Target Contact / Rhythm Debug");
-            GUI.Label(new Rect(32, 45, width - 24, 22), $"Current hand: {currentHand}   Action: {activeAction}   Logical ball phase: {logicalPhase}");
+            GUI.Label(new Rect(32, 45, width - 24, 22), $"Current hand: {currentHand}   Stance: {currentStance}   Action: {activeAction}   Phase: {logicalPhase}");
             if (rhythmClock != null)
             {
                 GUI.Label(new Rect(32, 67, width - 24, 22), $"BPM: {rhythmClock.Bpm:0.##}   Global beat: {rhythmClock.CurrentBeatPosition:0.000}   Phase: {rhythmClock.CurrentBeatPhase:0.000}");
@@ -695,8 +728,8 @@ namespace BounceTheory
             GUI.Label(new Rect(32, 309, width - 24, 22), $"Pending target DSP: {(hasPendingInput ? pendingContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}   Interval: {(hasPendingInput ? RhythmicIntervalCatalog.Label(pendingContactPlan.Interval) : "—")}");
             GUI.Label(new Rect(32, 331, width - 24, 42), $"Last decision/failure: {lastInputDecision}");
             GUI.Label(new Rect(32, 375, width - 24, 22), currentHand == BallHand.Left
-                ? "Inputs: W pound / D cross / A hesi / S behind-back"
-                : "Inputs: Up pound / Left cross / Right hesi / Down behind-back");
+                ? "Inputs: W pound / D cross / A hesi / S behind-back / Space stance"
+                : "Inputs: Up pound / Left cross / Right hesi / Down behind-back / Space stance");
             GUI.Label(new Rect(32, 397, width - 24, 22), "Impact sound fires only at measured FloorContact.");
         }
     }
