@@ -191,26 +191,48 @@ namespace BounceTheory
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null)
             {
-                bool poundPressed = keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame;
-                bool crossoverPressed = keyboard.dKey.wasPressedThisFrame || keyboard.leftArrowKey.wasPressedThisFrame;
-                bool hesitationPressed = keyboard.aKey.wasPressedThisFrame || keyboard.rightArrowKey.wasPressedThisFrame;
-                bool behindBackPressed = keyboard.sKey.wasPressedThisFrame || keyboard.downArrowKey.wasPressedThisFrame;
+                bool leftPoundPressed = keyboard.wKey.wasPressedThisFrame;
+                bool rightPoundPressed = keyboard.upArrowKey.wasPressedThisFrame;
+                bool leftCrossoverPressed = keyboard.dKey.wasPressedThisFrame;
+                bool rightCrossoverPressed = keyboard.leftArrowKey.wasPressedThisFrame;
+                bool leftHesitationPressed = keyboard.aKey.wasPressedThisFrame;
+                bool rightHesitationPressed = keyboard.rightArrowKey.wasPressedThisFrame;
+                bool leftBehindBackPressed = keyboard.sKey.wasPressedThisFrame;
+                bool rightBehindBackPressed = keyboard.downArrowKey.wasPressedThisFrame;
+
+                bool poundPressed = leftPoundPressed || rightPoundPressed;
+                bool crossoverPressed = leftCrossoverPressed || rightCrossoverPressed;
+                bool hesitationPressed = leftHesitationPressed || rightHesitationPressed;
+                bool behindBackPressed = leftBehindBackPressed || rightBehindBackPressed;
                 bool anyDribblePressed = poundPressed || crossoverPressed || hesitationPressed || behindBackPressed;
+                bool stanceModifierHeld = keyboard.spaceKey.isPressed;
 
                 if (keyboard.spaceKey.wasPressedThisFrame && !anyDribblePressed)
                     AdvanceStance();
 
-                bool actionAccepted = ProcessInput(keyboard.wKey.wasPressedThisFrame, keyboard.upArrowKey.wasPressedThisFrame);
+                bool actionAccepted = ProcessInput(leftPoundPressed, rightPoundPressed);
+                if (actionAccepted && stanceModifierHeld)
+                    SetStance(PlayerStance.Medium);
+
                 if (!actionAccepted)
-                    actionAccepted = ProcessCrossoverInput(keyboard.dKey.wasPressedThisFrame, keyboard.leftArrowKey.wasPressedThisFrame);
+                {
+                    actionAccepted = ProcessCrossoverInput(leftCrossoverPressed, rightCrossoverPressed);
+                    if (actionAccepted && stanceModifierHeld)
+                        SetStance(PlayerStance.Low);
+                }
+
                 if (!actionAccepted)
-                    actionAccepted = ProcessHesitationInput(keyboard.aKey.wasPressedThisFrame, keyboard.rightArrowKey.wasPressedThisFrame);
+                {
+                    actionAccepted = ProcessHesitationInput(leftHesitationPressed, rightHesitationPressed);
+                    if (actionAccepted && stanceModifierHeld)
+                        SetStance(PlayerStance.High);
+                }
+
                 if (!actionAccepted)
-                    ProcessBehindBackInput(keyboard.sKey.wasPressedThisFrame, keyboard.downArrowKey.wasPressedThisFrame);
+                    ProcessBehindBackInput(leftBehindBackPressed, rightBehindBackPressed);
             }
             Tick(Time.deltaTime);
         }
-
         public bool ProcessInput(bool leftPressed, bool rightPressed)
         {
             if (!TryIdentifyActiveInput(leftPressed, rightPressed)) return false;
@@ -339,6 +361,12 @@ namespace BounceTheory
             transform.position = ApplyMotionShape(Vector3.Lerp(floorPosition, handPosition, Smooth(returnT)), 1f - returnT);
             if (hasPendingInput && transform.position.y >= minimumFastBounceHeight && TryExecutePending()) return;
             if (returnT >= 1f) CompleteDribble();
+        }
+
+        public void SetStance(PlayerStance stance)
+        {
+            currentStance = stance;
+            Log($"stance changed to {currentStance}");
         }
 
         public void AdvanceStance()
