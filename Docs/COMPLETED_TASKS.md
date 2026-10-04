@@ -48,4 +48,42 @@ Future ball-control work should build on this contact-timing architecture rather
 
 ---
 
+
+## BT-BC-06 — Basic Crossover Foundation
+
+**Completed:** 2026-10-04  
+**Milestone:** Ball Control Language
+
+### Result
+
+The prototype now supports a basic rhythm-driven crossover in both directions while preserving the existing shared DSP/contact-timing architecture.
+
+Key behavior includes:
+
+- **D** crosses from left-hand control toward the right hand.
+- **Left Arrow** crosses from right-hand control toward the left hand.
+- Crossover uses the existing rhythm judgment and global contact-planning path rather than a separate timing system.
+- The ball follows a readable lateral path across the body.
+- Logical hand ownership transfers to the target hand at floor contact.
+- A valid follow-up action can be accepted before the crossover's visual return has fully finished.
+- Existing pound-dribble behavior remains intact.
+
+### Important Files
+
+- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
+- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
+- `Docs/IMPLEMENTATION_STATUS.md`
+
+### Verification
+
+Automated crossover validation was added for both left-to-right and right-to-left transfer while preserving prior rhythm/contact validators.
+
+User Play Mode verification was accepted on 2026-10-04. Both crossover directions and existing pound dribbles worked as intended.
+
+### Follow-Up
+
+The accepted next action may begin while the crossover is still visually traveling toward the receiving hand. This is intentional gameplay behavior, not an input bug. Future animation/blending should visually reconcile the overlap without reintroducing animation-gated input.
+
+---
+
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
