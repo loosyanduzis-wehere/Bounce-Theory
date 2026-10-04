@@ -122,4 +122,34 @@ User Play Mode verification was accepted on 2026-10-04. Left- and right-hand hes
 The hesitation should likely become more exaggerated during the animation pass. Possible presentation work includes a stronger body/shoulder sell and a slight lateral player weight shift or step. This should remain visual/readability work and should not change the underlying rhythm authority unless later playtesting identifies a gameplay reason to do so.
 
 ---
+
+## BT-BC-08 — Basic Behind-the-Back Foundation
+
+**Completed:** 2026-10-04  
+**Milestone:** Ball Control Language
+
+### Result
+
+The prototype now supports a basic behind-the-back dribble in both directions while preserving the existing shared rhythm/contact architecture.
+
+Key behavior includes:
+
+- **S** performs left-to-right behind-the-back when the left hand owns the ball.
+- **Down Arrow** performs right-to-left behind-the-back when the right hand owns the ball.
+- Logical ownership transfers to the opposite hand when the move resolves.
+- The move uses a distinct depth/wrap path rather than reading as a normal crossover.
+- Behind-the-back uses the existing `DribbleAction`, DSP judgment, target-contact planning, and global rhythm path.
+- Pound, crossover, and hesitation behavior remain intact.
+
+### Verification
+
+Automated validation was added for both behind-the-back directions while preserving previous pound, crossover, hesitation, rhythm, and contact checks.
+
+User Play Mode verification was accepted on 2026-10-04.
+
+### Follow-Up
+
+The initial core dribble vocabulary is now working: pound, crossover, hesitation, and behind-the-back. Future ball-control work can deepen branching, legality, and animation without replacing this shared rhythm architecture.
+
+---
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
