@@ -48,7 +48,7 @@ Do not implement all of these as one task. Promote one small task at a time into
 
 ## Milestone 3 — Stance
 
-**Status:** PLANNED
+**Status:** IN PROGRESS
 
 Working control design:
 
