@@ -161,7 +161,7 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 ## 5. Current Task — BT-BC-08
 
 **Title:** Basic Behind-the-Back Foundation  
-**Status:** PLANNED
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 
