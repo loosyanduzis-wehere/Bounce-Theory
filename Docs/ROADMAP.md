@@ -28,11 +28,14 @@ Key completed task:
 
 ## Milestone 2 — Ball Control Language
 
-**Status:** PLANNED
+**Status:** IN PROGRESS
+
+Completed:
+
+- Basic crossover foundation — `BT-BC-06`
 
 Planned areas:
 
-- Crossover
 - Hesitation
 - Behind-the-back
 - Ball-state branching
@@ -109,6 +112,7 @@ Planned areas:
 
 - Replace prototype visual motion with polished animation
 - Preserve rhythm/game-state authority underneath animation
+- Blend or redirect visual ball motion when a new valid action is accepted before the previous motion visually finishes; do not solve this with gameplay input locks
 - Expand expressive and intentionally outrageous finishes
 
 ---
