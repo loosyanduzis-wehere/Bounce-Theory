@@ -105,6 +105,7 @@ namespace BounceTheory
         private double lastActualFloorContactDsp;
         private double lastContactErrorMilliseconds;
         private string lastInputDecision = "Waiting for input.";
+        private bool spaceModifierConsumed;
 
         public BallHand StartingHand => startingHand;
         public BallHand CurrentHand => currentHand;
@@ -200,36 +201,43 @@ namespace BounceTheory
                 bool leftBehindBackPressed = keyboard.sKey.wasPressedThisFrame;
                 bool rightBehindBackPressed = keyboard.downArrowKey.wasPressedThisFrame;
 
-                bool poundPressed = leftPoundPressed || rightPoundPressed;
-                bool crossoverPressed = leftCrossoverPressed || rightCrossoverPressed;
-                bool hesitationPressed = leftHesitationPressed || rightHesitationPressed;
-                bool behindBackPressed = leftBehindBackPressed || rightBehindBackPressed;
-                bool anyDribblePressed = poundPressed || crossoverPressed || hesitationPressed || behindBackPressed;
                 bool stanceModifierHeld = keyboard.spaceKey.isPressed;
 
-                if (keyboard.spaceKey.wasPressedThisFrame && !anyDribblePressed)
-                    AdvanceStance();
+                if (keyboard.spaceKey.wasPressedThisFrame)
+                    spaceModifierConsumed = false;
 
                 bool actionAccepted = ProcessInput(leftPoundPressed, rightPoundPressed);
                 if (actionAccepted && stanceModifierHeld)
+                {
                     SetStance(PlayerStance.Medium);
+                    spaceModifierConsumed = true;
+                }
 
                 if (!actionAccepted)
                 {
                     actionAccepted = ProcessCrossoverInput(leftCrossoverPressed, rightCrossoverPressed);
                     if (actionAccepted && stanceModifierHeld)
+                    {
                         SetStance(PlayerStance.Low);
+                        spaceModifierConsumed = true;
+                    }
                 }
 
                 if (!actionAccepted)
                 {
                     actionAccepted = ProcessHesitationInput(leftHesitationPressed, rightHesitationPressed);
                     if (actionAccepted && stanceModifierHeld)
+                    {
                         SetStance(PlayerStance.High);
+                        spaceModifierConsumed = true;
+                    }
                 }
 
                 if (!actionAccepted)
                     ProcessBehindBackInput(leftBehindBackPressed, rightBehindBackPressed);
+
+                if (keyboard.spaceKey.wasReleasedThisFrame && !spaceModifierConsumed)
+                    AdvanceStance();
             }
             Tick(Time.deltaTime);
         }
@@ -407,6 +415,7 @@ namespace BounceTheory
             motionMode = BounceMotionMode.Normal;
             ClearPendingInput();
             lastInputDecision = "Reset to starting hand; waiting for input.";
+            spaceModifierConsumed = false;
             SetContactIndicator(false);
             SyncAnchorHeights();
             SnapToCurrentHand();
