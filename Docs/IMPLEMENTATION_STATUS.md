@@ -160,7 +160,7 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 ## 5. Current Task — BT-ST-01
 
 **Title:** Stance State + Plain Space Flow  
-**Status:** PLANNED
+**Status:** IN PROGRESS
 
 ### Goal
 
@@ -246,7 +246,7 @@ User/manual:
 - [ ] Press Space during active dribble motion and confirm stance still changes.
 - [ ] Confirm W/Up, D/Left, A/Right, and S/Down dribble controls still work as before.
 
-Codex should stop at `AWAITING PLAYTEST` after automated verification and push the implementation for user testing.
+Implementation note: the first source patch was made directly through GitHub rather than Codex to test a lower-credit workflow. Unity compile and Play Mode verification are still pending, so this task remains `IN PROGRESS` until local verification succeeds.
 
 ---
 
