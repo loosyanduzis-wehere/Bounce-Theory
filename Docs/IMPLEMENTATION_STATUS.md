@@ -159,14 +159,20 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ## 5. Current Task — BT-ST-01
 
-**Title:** Stance State + Plain Space Flow  
+**Title:** Stance State + Space Control Foundation  
 **Status:** IN PROGRESS
 
 ### Goal
 
-Create the minimum three-stance gameplay foundation and make a plain **Space** press move through the approved stance flow:
+Create the minimum three-stance gameplay foundation, support the approved plain-Space flow, and wire the first direct stance modifier inputs into existing dribble actions:
 
 `Medium → Low → Medium → High → Medium → Low → ...`
+
+Direct stance modifiers:
+
+- **Space + Crossover → Low**
+- **Space + Pound → Medium**
+- **Space + Hesitation → High**
 
 This task proves stance state and fast mid-dribble stance switching before stance begins modifying dribble behavior.
 
@@ -187,6 +193,8 @@ The core dribble vocabulary is now working. Stance is the next gameplay layer, b
 - Preserve the alternating extreme so returning to Medium remembers whether the next plain-Space destination should be Low or High.
 - Allow stance input during an active dribble sequence; do not gate Space on ball-animation completion.
 - Make the current stance temporarily readable in Play Mode using existing debug feedback or another minimal prototype-only indication.
+- Holding Space while an accepted crossover, pound, or hesitation input occurs must set the mapped stance while still performing that dribble action.
+- A modified dribble must consume that Space press so releasing Space does not also advance the plain-Space stance flow.
 - Preserve all existing pound, crossover, hesitation, behind-the-back, rhythm, and contact behavior.
 
 ### Relevant Files / Systems
@@ -209,6 +217,10 @@ Codex should inspect the project and choose the smallest sensible owner for stan
 - [ ] Returning to Medium preserves which extreme should come next.
 - [ ] Space can change stance while a dribble visual is still active.
 - [ ] Current stance is readable during prototype playtesting.
+- [ ] Holding Space + Crossover performs the crossover and leaves the player in Low stance.
+- [ ] Holding Space + Pound performs the pound and leaves the player in Medium stance.
+- [ ] Holding Space + Hesitation performs the hesitation and leaves the player in High stance.
+- [ ] Releasing Space after a modified dribble does not also advance the plain-Space stance cycle.
 - [ ] Existing dribble controls and rhythm/contact behavior remain unchanged.
 - [ ] Project compiles with no new errors.
 
@@ -216,9 +228,6 @@ Codex should inspect the project and choose the smallest sensible owner for stan
 
 Do **not** implement during this task:
 
-- `Space + Crossover → Low`
-- `Space + Pound → Medium`
-- `Space + Hesitation → High`
 - Any special `Space + Behind-the-back` behavior
 - Stance effects on bounce height or trajectory
 - Stance effects on rhythm/timing windows
@@ -244,9 +253,12 @@ User/manual:
 - [ ] Start Play Mode and confirm the initial stance is Medium.
 - [ ] Press Space repeatedly and confirm `Medium → Low → Medium → High → Medium → Low...`.
 - [ ] Press Space during active dribble motion and confirm stance still changes.
+- [ ] Hold Space + crossover and confirm the crossover occurs and stance becomes Low.
+- [ ] Hold Space + pound and confirm the pound occurs and stance becomes Medium.
+- [ ] Hold Space + hesitation and confirm the hesitation occurs and stance becomes High.
 - [ ] Confirm W/Up, D/Left, A/Right, and S/Down dribble controls still work as before.
 
-Implementation note: the first source patch was made directly through GitHub rather than Codex to test a lower-credit workflow. Unity compile and Play Mode verification are still pending, so this task remains `IN PROGRESS` until local verification succeeds.
+Implementation note: the current stance source patches were made directly through GitHub rather than Codex to test a lower-credit workflow. Plain Space now changes stance on release when it was not used as a modifier. Holding Space with an accepted crossover, pound, or hesitation sets Low, Medium, or High respectively while preserving the dribble action. Unity compile and Play Mode verification are still pending, so this task remains `IN PROGRESS` until local verification succeeds.
 
 ---
 
