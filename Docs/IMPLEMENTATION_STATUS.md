@@ -162,7 +162,7 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 ## 5. Current Task — BT-BC-07
 
 **Title:** Basic Hesitation Foundation  
-**Status:** PLANNED
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 
