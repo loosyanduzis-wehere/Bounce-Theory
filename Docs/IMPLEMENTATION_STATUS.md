@@ -3,7 +3,7 @@
 **Status:** Active prototype  
 **Completed milestone:** Core Rhythm + Pound Dribble Foundation  
 **Next planned milestone:** Ball Control Language  
-**Current task:** None — waiting for one task to be promoted  
+**Current task:** `BT-BC-06 — Basic Crossover Foundation`  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
@@ -159,25 +159,96 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ---
 
-## 5. Current Task
+## 5. Current Task — BT-BC-06
 
-### No Active Task
+**Title:** Basic Crossover Foundation  
+**Status:** PLANNED
 
-**Task ID:** None  
-**Status:** None
+### Goal
 
-No new gameplay work is authorized yet.
+Add the first functional crossover action so the ball can move from the currently controlling hand to the opposite hand while remaining inside Bounce Theory's existing rhythm/contact architecture.
 
-Before another implementation task begins:
+This task should prove the basic crossover interaction before adding more advanced ball-control moves or branching.
 
-1. Select the next roadmap item with the user.
-2. Resolve any design questions that materially affect implementation.
-3. Promote exactly one concrete task into this section.
-4. Give it a stable task ID.
-5. Define acceptance criteria.
-6. Define anything explicitly out of scope.
+### Why This Task Exists
 
-Codex must **not** select a future task for itself.
+The Core Rhythm + Pound Dribble Foundation is complete. The next milestone is Ball Control Language, and crossover is the simplest new action that tests whether the existing rhythm system can support a move that changes hand ownership instead of returning to the same hand.
+
+The crossover must extend the current architecture rather than introducing a separate timing system or returning to animation-gated input.
+
+### Scope
+
+- Support the keyboard crossover inputs defined by the Source of Truth:
+  - **D** when the left hand currently controls the ball = crossover toward the right hand.
+  - **Left Arrow** when the right hand currently controls the ball = crossover toward the left hand.
+- Give the crossover a clearly readable lateral ball path between hand sides.
+- Transfer logical hand ownership to the opposite hand when the crossover successfully resolves.
+- Use the existing DSP timestamp, rhythm judgment, target-contact planning, and global rhythm grid rather than creating a separate crossover clock.
+- Preserve the principle that accepted gameplay input is not gated solely by completion of prior visual motion.
+- Preserve existing pound-dribble behavior and Chunk 4.75 contact timing.
+- Add or extend targeted validation for crossover behavior where practical.
+
+The exact final crossover animation, arc, speed, and move-to-rhythm mapping remain prototype tuning choices.
+
+### Relevant Files / Systems
+
+Likely relevant:
+
+- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
+- `Assets/BounceTheory/Scripts/RhythmClock.cs`
+- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
+- `Assets/Scenes/BounceTheoryPrototype.unity`
+
+Codex must inspect the actual implementation before deciding which files truly need changes.
+
+### Acceptance Criteria
+
+- [ ] With the ball controlled by the left hand, pressing **D** can initiate a crossover toward the right hand.
+- [ ] With the ball controlled by the right hand, pressing **Left Arrow** can initiate a crossover toward the left hand.
+- [ ] A successful crossover finishes with logical ball ownership in the opposite hand.
+- [ ] The ball visibly travels across the player's body rather than behaving like a same-hand pound dribble.
+- [ ] Crossover timing uses the existing shared DSP/global rhythm architecture.
+- [ ] The crossover does not require the previous visual motion to fully finish before a rhythmically and physically valid follow-up can be considered.
+- [ ] Existing **W / Up Arrow** pound-dribble behavior still works.
+- [ ] Existing Chunk 4.75 rhythm-driven floor-contact behavior and validators remain intact.
+- [ ] No conventional player locomotion is introduced.
+- [ ] Project compiles with no new errors.
+
+### Out of Scope
+
+Do **not** implement during this task:
+
+- Hesitation
+- Behind-the-back
+- Stance changes
+- Defender reactions or steals
+- Finish/shooting logic
+- Possession scoring
+- Full final dribble state-machine redesign
+- Final crossover animation/polish
+- Permanent move-to-rhythm interval assignment
+- Cleanup/refactor of unrelated legacy SceneBuilder code
+
+### Verification Required
+
+Automated:
+
+- [ ] Project compiles.
+- [ ] Existing rhythm/pound/contact validators still pass.
+- [ ] Add or run targeted checks confirming left-to-right and right-to-left hand transfer.
+- [ ] Confirm crossover uses the existing rhythm/contact timing path.
+- [ ] Review `git diff`.
+- [ ] Confirm unrelated files were not changed.
+
+User/manual:
+
+- [ ] In Play Mode, verify **D** crosses left → right.
+- [ ] In Play Mode, verify **Left Arrow** crosses right → left.
+- [ ] Confirm the lateral crossover is visually readable.
+- [ ] Confirm pound dribbles still feel and behave as before.
+- [ ] Confirm crossover timing feels connected to the existing rhythm rather than like a disconnected canned animation.
+
+Codex should stop at `AWAITING PLAYTEST` after automated verification and push the implementation for user testing.
 
 ---
 
