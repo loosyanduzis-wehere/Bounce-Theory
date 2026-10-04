@@ -1,13 +1,13 @@
 # Bounce Theory — Implementation Status
 
 **Status:** Active prototype  
-**Completed milestone:** Core Rhythm + Pound Dribble Foundation  
+**Completed milestone:** Ball Control Language — core vocabulary  
 **Next planned milestone:** Stance  
-**Current task:** None — milestone transition pending  
+**Current task:** `BT-ST-01 — Stance State + Plain Space Flow`  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
-**Current branch at handoff:** `milestone/ball-control`  
+**Current branch at handoff:** `milestone/stance`  
 **Project path:** `C:\Users\jerry\Bounce Theory v2`  
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
@@ -157,34 +157,96 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ---
 
-## 5. Current Task
+## 5. Current Task — BT-ST-01
 
-### No Active Task — Milestone Transition
+**Title:** Stance State + Plain Space Flow  
+**Status:** PLANNED
 
-**Task ID:** None  
-**Status:** None
+### Goal
 
-`BT-BC-08 — Basic Behind-the-Back Foundation` passed user Play Mode verification on 2026-10-04.
+Create the minimum three-stance gameplay foundation and make a plain **Space** press move through the approved stance flow:
 
-The initial core dribble vocabulary is now working:
+`Medium → Low → Medium → High → Medium → Low → ...`
 
-- Pound
-- Crossover
-- Hesitation
-- Behind-the-back
+This task proves stance state and fast mid-dribble stance switching before stance begins modifying dribble behavior.
 
-The next planned milestone is **Stance**.
+### Why This Task Exists
 
-Per `AGENTS.md`, do not merge `milestone/ball-control` into `dev` and do not begin a new milestone branch without explicit user approval.
+The core dribble vocabulary is now working. Stance is the next gameplay layer, but the first implementation should establish only the state model and basic Space control rather than mixing in stance-dependent trajectories, timing, exposure, or modifier combinations.
 
-Once the milestone transition is approved, the first recommended stance task is a small foundation task:
+### Scope
 
-- add explicit Low / Medium / High stance state,
-- default to Medium,
-- implement plain Space flow: `Medium → Low → Medium → High → Medium → Low...`,
-- keep Space + dribble modifiers out of that first task.
+- Add explicit **Low**, **Medium**, and **High** stance states.
+- Default the player to **Medium** stance.
+- Implement plain **Space** flow exactly as:
+  - Medium → Low
+  - Low → Medium
+  - Medium → High
+  - High → Medium
+  - then repeat.
+- Preserve the alternating extreme so returning to Medium remembers whether the next plain-Space destination should be Low or High.
+- Allow stance input during an active dribble sequence; do not gate Space on ball-animation completion.
+- Make the current stance temporarily readable in Play Mode using existing debug feedback or another minimal prototype-only indication.
+- Preserve all existing pound, crossover, hesitation, behind-the-back, rhythm, and contact behavior.
 
-Codex must not start stance implementation while this section says no active task.
+### Relevant Files / Systems
+
+Likely relevant:
+
+- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
+- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
+- `Assets/Scenes/BounceTheoryPrototype.unity`
+
+Codex should inspect the project and choose the smallest sensible owner for stance state. Prefer keeping stance state conceptually separate from visual animation timing.
+
+### Acceptance Criteria
+
+- [ ] The prototype exposes three stance states: Low, Medium, and High.
+- [ ] Play begins in Medium stance.
+- [ ] Repeated plain Space presses produce `Medium → Low → Medium → High → Medium → Low...`.
+- [ ] Low always returns to Medium with one plain Space press.
+- [ ] High always returns to Medium with one plain Space press.
+- [ ] Returning to Medium preserves which extreme should come next.
+- [ ] Space can change stance while a dribble visual is still active.
+- [ ] Current stance is readable during prototype playtesting.
+- [ ] Existing dribble controls and rhythm/contact behavior remain unchanged.
+- [ ] Project compiles with no new errors.
+
+### Out of Scope
+
+Do **not** implement during this task:
+
+- `Space + Crossover → Low`
+- `Space + Pound → Medium`
+- `Space + Hesitation → High`
+- Any special `Space + Behind-the-back` behavior
+- Stance effects on bounce height or trajectory
+- Stance effects on rhythm/timing windows
+- Stance effects on exposure, defender reaction, or move legality
+- Final stance animation
+- Player locomotion
+- Defender behavior
+- Unrelated refactors
+
+### Verification Required
+
+Automated:
+
+- [ ] Project compiles.
+- [ ] Existing dribble/rhythm/contact validators still pass.
+- [ ] Add targeted validation for the complete plain-Space stance cycle.
+- [ ] Verify stance can change independently of current dribble visual completion.
+- [ ] Review `git diff`.
+- [ ] Confirm unrelated files were not changed.
+
+User/manual:
+
+- [ ] Start Play Mode and confirm the initial stance is Medium.
+- [ ] Press Space repeatedly and confirm `Medium → Low → Medium → High → Medium → Low...`.
+- [ ] Press Space during active dribble motion and confirm stance still changes.
+- [ ] Confirm W/Up, D/Left, A/Right, and S/Down dribble controls still work as before.
+
+Codex should stop at `AWAITING PLAYTEST` after automated verification and push the implementation for user testing.
 
 ---
 
