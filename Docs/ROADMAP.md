@@ -49,13 +49,25 @@ Do not implement all of these as one task. Promote one small task at a time into
 
 **Status:** PLANNED
 
+Working control design:
+
+- Three stances: Low / Medium / High
+- Medium is the neutral/home stance
+- Plain Space flow: Medium → Low → Medium → High → Medium → Low...
+- Space + Crossover → Low
+- Space + Pound → Medium
+- Space + Hesitation → High
+- Space + Behind-the-back has no assigned stance destination yet
+
 Planned areas:
 
 - Mid-dribble stance changes
-- Stance effects on rhythm
-- Stance effects on trajectory
-- Stance effects on exposure
-- Stance-dependent follow-up actions
+- Implement quick Space stance flow
+- Implement Space + dribble stance modifiers
+- Define stance effects on rhythm
+- Define stance effects on trajectory
+- Define stance effects on exposure
+- Define stance-dependent follow-up actions
 
 ---
 
