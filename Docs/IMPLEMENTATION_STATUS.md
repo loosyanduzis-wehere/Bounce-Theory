@@ -7,7 +7,7 @@
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
-**Current branch at handoff:** `main`  
+**Current branch at handoff:** `milestone/ball-control`  
 **Project path:** `C:\Users\jerry\Bounce Theory v2`  
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
