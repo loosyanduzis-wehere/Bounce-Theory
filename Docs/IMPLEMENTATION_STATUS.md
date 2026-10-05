@@ -160,7 +160,7 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 ## 5. Current Task — BT-ST-02
 
 **Title:** Stance-Dependent Pound Bounce Height  
-**Status:** PLANNED
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 

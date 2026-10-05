@@ -894,6 +894,134 @@ namespace BounceTheory.Editor
                 errors.Add("Behind-the-back unexpectedly applied a stance destination.");
         }
 
+        [MenuItem("Bounce Theory/Validate BT-ST-02 Stance Pound Height")]
+        public static void ValidateStancePoundHeight()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var errors = new List<string>();
+            GameObject offense = Required("OffensivePlayer", errors);
+            GameObject defender = Required("Defender", errors);
+            GameObject ball = Required("Basketball", errors);
+            GameObject cameraObject = Required("Main Camera", errors);
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            PrototypeStanceVisual visual = offense ? offense.GetComponent<PrototypeStanceVisual>() : null;
+            Transform leftAnchor = offense ? offense.transform.Find("LeftHandBallAnchor") : null;
+            Transform rightAnchor = offense ? offense.transform.Find("RightHandBallAnchor") : null;
+            Transform contact = prototype ? prototype.Find("BallFloorContactIndicator") : null;
+
+            if (!clock) errors.Add("Reusable RhythmClock is missing.");
+            if (!controller) errors.Add("PoundDribbleController is missing.");
+            if (!visual) errors.Add("PrototypeStanceVisual is missing.");
+            if (!leftAnchor || !rightAnchor) errors.Add("Ball hand anchors are missing.");
+            if (!contact) errors.Add("BallFloorContactIndicator is missing.");
+            if (controller && Mathf.Abs(controller.HandHeight - 1.56f) > .001f)
+                errors.Add("Medium pound baseline hand height changed from 1.56.");
+            if (controller && Mathf.Abs(controller.StanceModifierGraceSeconds - .18f) > .001f)
+                errors.Add("The 0.18-second stance modifier grace changed.");
+            if (UnityEngine.Object.FindAnyObjectByType<Rigidbody>()) errors.Add("A Rigidbody was introduced.");
+            if (UnityEngine.Object.FindAnyObjectByType<CharacterController>()) errors.Add("A CharacterController was introduced.");
+
+            if (controller && clock && visual && leftAnchor && rightAnchor && contact && offense && defender && cameraObject)
+            {
+                Vector3 offensePosition = offense.transform.position;
+                Vector3 defenderPosition = defender.transform.position;
+                Vector3 cameraPosition = cameraObject.transform.position;
+                Quaternion cameraRotation = cameraObject.transform.rotation;
+
+                PoundProfileSample low = CapturePoundProfile(controller, clock, PlayerStance.Low, true, errors);
+                PoundProfileSample medium = CapturePoundProfile(controller, clock, PlayerStance.Medium, false, errors);
+                PoundProfileSample high = CapturePoundProfile(controller, clock, PlayerStance.High, false, errors);
+
+                if (!(low.MidpointHeight < medium.MidpointHeight && medium.MidpointHeight < high.MidpointHeight))
+                    errors.Add($"Pound midpoint heights are not Low < Medium < High ({low.MidpointHeight:0.000}, {medium.MidpointHeight:0.000}, {high.MidpointHeight:0.000}).");
+                float expectedMedium = Mathf.Lerp(controller.HandHeight, controller.FloorHeight, .5f);
+                if (Mathf.Abs(medium.MidpointHeight - expectedMedium) > .002f)
+                    errors.Add("Medium pound no longer uses the previous baseline descent interpolation.");
+                if (Math.Abs(low.InputDsp - medium.InputDsp) > .000001 || Math.Abs(medium.InputDsp - high.InputDsp) > .000001)
+                    errors.Add("Stance changed the original pound keypress DSP timestamp.");
+                if (Math.Abs(low.TargetContactDsp - medium.TargetContactDsp) > .000001 ||
+                    Math.Abs(medium.TargetContactDsp - high.TargetContactDsp) > .000001)
+                    errors.Add("Stance created separate pound contact clocks or targets.");
+                if (low.Judgment.Result != medium.Judgment.Result || medium.Judgment.Result != high.Judgment.Result ||
+                    low.Judgment.Direction != medium.Judgment.Direction || medium.Judgment.Direction != high.Judgment.Direction)
+                    errors.Add("Stance changed the rhythm judgment for an identical pound timestamp.");
+
+                ValidateStanceCycleAndVisuals(controller, visual, errors);
+                ValidateCrossoverCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateHesitationCycle(controller, clock, BallHand.Right, rightAnchor, errors);
+                ValidateBehindBackCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateTargetContactScheduling(controller, clock, errors);
+
+                AssertStill("OffensivePlayer", offensePosition, offense.transform.position, errors);
+                AssertStill("Defender", defenderPosition, defender.transform.position, errors);
+                AssertStill("Main Camera", cameraPosition, cameraObject.transform.position, errors);
+                if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                    errors.Add("Main Camera rotation changed during stance-pound validation.");
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException("BT-ST-02 validation failed:\n- " + string.Join("\n- ", errors));
+            Debug.Log("BT-ST-02 validation passed: accepted Low, Medium, and High pounds have ordered vertical profiles while sharing identical input DSP time, rhythm judgment, and grid contact target; Medium preserves the baseline interpolation; active pounds retain their accepted stance profile across a later stance change; contact tolerance and representative stance/crossover/hesitation/behind-the-back regressions pass.");
+        }
+
+        private readonly struct PoundProfileSample
+        {
+            public readonly float MidpointHeight;
+            public readonly double InputDsp;
+            public readonly double TargetContactDsp;
+            public readonly TimingJudgment Judgment;
+
+            public PoundProfileSample(float midpointHeight, ContactTimingPlan plan)
+            {
+                MidpointHeight = midpointHeight;
+                InputDsp = plan.InputDspTimestamp;
+                TargetContactDsp = plan.TargetContactDspTimestamp;
+                Judgment = plan.Judgment;
+            }
+        }
+
+        private static PoundProfileSample CapturePoundProfile(PoundDribbleController controller, RhythmClock clock,
+            PlayerStance stance, bool changeStanceAfterAcceptance, ICollection<string> errors)
+        {
+            clock.ResetBallEventHistory();
+            controller.ResetToStartingHand();
+            controller.SetStartingHand(BallHand.Left);
+            controller.SetStance(stance);
+            int completedBefore = controller.CompletedDribbleCount;
+            double input = clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds;
+            if (!controller.ProcessInputAtRhythmTime(true, false, input))
+            {
+                errors.Add(stance + " pound was not accepted.");
+                return default;
+            }
+
+            ContactTimingPlan plan = controller.ActiveContactPlan;
+            TimingJudgment judgment = controller.ActiveActionJudgment;
+            if (controller.ActivePoundStance != stance)
+                errors.Add(stance + " pound did not capture its accepted stance profile.");
+            if (changeStanceAfterAcceptance)
+            {
+                controller.SetStance(PlayerStance.High);
+                if (controller.ActivePoundStance != stance || controller.ActiveActionJudgment.Result != judgment.Result ||
+                    Math.Abs(controller.ActiveContactPlan.InputDspTimestamp - plan.InputDspTimestamp) > .000001)
+                    errors.Add("Changing stance during an active pound rewrote its accepted profile, judgment, or keypress timestamp.");
+            }
+
+            float halfApproach = (float)((plan.TargetContactDspTimestamp - plan.InputDspTimestamp) * .5);
+            controller.Tick(halfApproach);
+            float midpointHeight = controller.transform.position.y;
+            for (int i = 0; i < 300 && controller.CompletedDribbleCount == completedBefore; i++)
+                controller.Tick(1f / 240f);
+            if (controller.CompletedDribbleCount != completedBefore + 1)
+                errors.Add(stance + " pound did not reach floor contact.");
+            if (Math.Abs(controller.LastContactErrorMilliseconds) > 6.0)
+                errors.Add(stance + " pound exceeded the 6 ms floor-contact tolerance.");
+            CompleteCurrentDribble(controller, errors);
+            return new PoundProfileSample(midpointHeight, plan);
+        }
+
         public static void CapturePreview()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
