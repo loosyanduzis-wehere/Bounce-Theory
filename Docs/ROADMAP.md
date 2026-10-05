@@ -67,9 +67,13 @@ Completed foundation:
 - Space + dribble stance modifiers — `BT-ST-01`
 - Prototype Low / Medium / High visual readability — `BT-ST-01`
 
+Completed behavior experiment:
+
+- Stance-dependent pound bounce profile — `BT-ST-02`
+
 Next planned areas:
 
-- Stance-dependent bounce height / trajectory
+- Complete prototype stance behavior pass across crossover, hesitation, and behind-the-back
 - Define stance effects on rhythm
 - Define stance effects on exposure
 - Define stance-dependent follow-up actions
