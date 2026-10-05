@@ -188,4 +188,34 @@ The next stance work should begin making stance mechanically meaningful one vari
 
 ---
 
+## BT-ST-02 — Stance-Dependent Pound Bounce Height
+
+**Completed:** 2026-10-05  
+**Milestone:** Stance
+
+### Result
+
+Pound dribbles now capture the stance that was active when the action was accepted and use that stance to select a prototype vertical profile while preserving the shared rhythm/contact architecture.
+
+Key behavior includes:
+
+- **Low** pound uses a lower/tighter prototype profile.
+- **Medium** preserves the previous pound baseline.
+- **High** pound uses a higher prototype profile.
+- The accepted pound keeps its original stance profile even if stance changes later during the active motion.
+- Low, Medium, and High share the same input DSP timestamp, rhythm judgment, and target floor-contact clock for equivalent input.
+- Crossover, hesitation, and behind-the-back behavior remain unchanged.
+
+### Verification
+
+Targeted automated validation passed for ordered Low < Medium < High midpoint profiles, unchanged Medium baseline behavior, preserved contact timing, and representative dribble regressions.
+
+User Play Mode testing confirmed that the stance-dependent pound difference exists, though the current prototype distinction is subtle.
+
+### Follow-Up
+
+Do not over-tune the numeric pound-height values yet. Final perceptual differences should be revisited during the animation/presentation pass, where body posture, hand position, anticipation, and follow-through will materially affect how stance reads.
+
+---
+
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
