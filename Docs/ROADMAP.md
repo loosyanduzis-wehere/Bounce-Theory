@@ -60,13 +60,17 @@ Working control design:
 - Space + Hesitation → High
 - Space + Behind-the-back has no assigned stance destination yet
 
-Planned areas:
+Completed foundation:
 
-- Mid-dribble stance changes
-- Implement quick Space stance flow
-- Implement Space + dribble stance modifiers
+- Mid-dribble stance changes — `BT-ST-01`
+- Quick Space stance flow — `BT-ST-01`
+- Space + dribble stance modifiers — `BT-ST-01`
+- Prototype Low / Medium / High visual readability — `BT-ST-01`
+
+Next planned areas:
+
+- Stance-dependent bounce height / trajectory
 - Define stance effects on rhythm
-- Define stance effects on trajectory
 - Define stance effects on exposure
 - Define stance-dependent follow-up actions
 
