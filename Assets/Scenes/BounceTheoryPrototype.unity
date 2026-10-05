@@ -10257,6 +10257,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1360786422}
+  - component: {fileID: 1360786423}
   m_Layer: 0
   m_Name: OffensivePlayer
   m_TagString: Untagged
@@ -10289,6 +10290,34 @@ Transform:
   - {fileID: 600117390}
   m_Father: {fileID: 827053522}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1360786423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1360786421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e072296295161a142af794241aef972d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::BounceTheory.PrototypeStanceVisual
+  stanceSource: {fileID: 1404193815}
+  torso: {fileID: 112985279}
+  head: {fileID: 1849939589}
+  leftLeg: {fileID: 461346837}
+  rightLeg: {fileID: 1027715522}
+  leftArm: {fileID: 2085787835}
+  rightArm: {fileID: 61791484}
+  jerseyStripe: {fileID: 1969909324}
+  lowHeightOffset: -0.38
+  lowVerticalScale: 0.78
+  lowWidthScale: 1.08
+  lowLegSpread: 0.1
+  highHeightOffset: 0.22
+  highVerticalScale: 1.12
+  highWidthScale: 0.96
+  highLegNarrowing: 0.04
 --- !u!1 &1369567952
 GameObject:
   m_ObjectHideFlags: 0
@@ -10676,6 +10705,12 @@ MonoBehaviour:
   startingHand: 0
   leftHandAnchor: {fileID: 617132936}
   rightHandAnchor: {fileID: 600117390}
+  crossoverContactLateralProgress: 0.55
+  hesitationHoldFraction: 0.36
+  hesitationLift: 0.18
+  behindBackContactLateralProgress: 0.55
+  behindBackDepthOffset: 0.65
+  behindBackWrapDepth: 0.3
   visualBounceDuration: 0.72
   handHeight: 1.56
   floorHeight: 0.47

@@ -259,6 +259,45 @@ namespace BounceTheory.Editor
             Debug.Log("Bounce Theory Chunk 4.75 target-contact timing and adaptive motion upgrade applied.");
         }
 
+        [MenuItem("Bounce Theory/Upgrade Prototype Scene To BT-ST-01 Stance Visual")]
+        public static void UpgradeStanceVisual()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            GameObject offense = GameObject.Find("OffensivePlayer");
+            GameObject defender = GameObject.Find("Defender");
+            GameObject ball = GameObject.Find("Basketball");
+            GameObject cameraObject = GameObject.Find("Main Camera");
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            if (!offense || !defender || !ball || !cameraObject || !controller)
+                throw new InvalidOperationException("The prototype scene is incomplete; cannot add the stance visual.");
+
+            Vector3 offensePosition = offense.transform.position;
+            Vector3 defenderPosition = defender.transform.position;
+            Vector3 cameraPosition = cameraObject.transform.position;
+            Quaternion cameraRotation = cameraObject.transform.rotation;
+
+            PrototypeStanceVisual visual = offense.GetComponent<PrototypeStanceVisual>();
+            if (!visual) visual = offense.AddComponent<PrototypeStanceVisual>();
+            visual.Configure(controller,
+                offense.transform.Find("Torso"), offense.transform.Find("Head"),
+                offense.transform.Find("LeftLeg"), offense.transform.Find("RightLeg"),
+                offense.transform.Find("LeftArm"), offense.transform.Find("RightArm"),
+                offense.transform.Find("JerseyStripe"));
+            EditorUtility.SetDirty(visual);
+
+            AssertUnchanged("OffensivePlayer position", offensePosition, offense.transform.position);
+            AssertUnchanged("Defender position", defenderPosition, defender.transform.position);
+            AssertUnchanged("Main Camera position", cameraPosition, cameraObject.transform.position);
+            if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                throw new InvalidOperationException("Stance visual upgrade changed the Main Camera rotation.");
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+                throw new InvalidOperationException("Could not save " + ScenePath);
+            AssetDatabase.SaveAssets();
+            Debug.Log("BT-ST-01 prototype stance visual added without moving the player root, defender, camera, or ball anchors.");
+        }
+
         [MenuItem("Bounce Theory/Validate Chunk 1 Prototype Scene")]
         public static void ValidateScene()
         {
@@ -721,6 +760,138 @@ namespace BounceTheory.Editor
             if (errors.Count > 0)
                 throw new InvalidOperationException("BT-BC-08 validation failed:\n- " + string.Join("\n- ", errors));
             Debug.Log("BT-BC-08 validation passed: S moves left-to-right behind the body, Down Arrow moves right-to-left behind the body, ownership transfers at floor contact, the rearward curved path is distinct from crossover, an opposite-hand pound follow-up begins during the unfinished return, shared DSP contact timing and all prior action regressions pass, and scene subjects remain stationary.");
+        }
+
+        [MenuItem("Bounce Theory/Validate BT-ST-01 Stance Visual")]
+        public static void ValidateStanceVisual()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var errors = new List<string>();
+            GameObject offense = Required("OffensivePlayer", errors);
+            GameObject defender = Required("Defender", errors);
+            GameObject ball = Required("Basketball", errors);
+            GameObject cameraObject = Required("Main Camera", errors);
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            PrototypeStanceVisual visual = offense ? offense.GetComponent<PrototypeStanceVisual>() : null;
+            Transform leftAnchor = offense ? offense.transform.Find("LeftHandBallAnchor") : null;
+            Transform rightAnchor = offense ? offense.transform.Find("RightHandBallAnchor") : null;
+            Transform contact = prototype ? prototype.Find("BallFloorContactIndicator") : null;
+
+            if (!clock) errors.Add("Reusable RhythmClock is missing.");
+            if (!controller) errors.Add("PoundDribbleController is missing.");
+            if (!visual) errors.Add("PrototypeStanceVisual is missing from OffensivePlayer.");
+            if (visual && visual.StanceSource != controller) errors.Add("Stance visual does not observe the authoritative controller stance.");
+            if (!leftAnchor) errors.Add("LeftHandBallAnchor is missing.");
+            if (!rightAnchor) errors.Add("RightHandBallAnchor is missing.");
+            if (!contact) errors.Add("BallFloorContactIndicator is missing.");
+            if (UnityEngine.Object.FindObjectsByType<PrototypeStanceVisual>(FindObjectsInactive.Exclude).Length != 1)
+                errors.Add("The scene does not contain exactly one prototype stance visual.");
+            if (UnityEngine.Object.FindAnyObjectByType<Rigidbody>()) errors.Add("A Rigidbody was introduced.");
+            if (UnityEngine.Object.FindAnyObjectByType<CharacterController>()) errors.Add("A CharacterController was introduced.");
+
+            if (controller && visual && clock && leftAnchor && rightAnchor && contact && offense && defender && cameraObject)
+            {
+                Vector3 offensePosition = offense.transform.position;
+                Vector3 defenderPosition = defender.transform.position;
+                Vector3 cameraPosition = cameraObject.transform.position;
+                Quaternion cameraRotation = cameraObject.transform.rotation;
+                Vector3 leftAnchorPosition = leftAnchor.position;
+                Vector3 rightAnchorPosition = rightAnchor.position;
+
+                ValidateStanceCycleAndVisuals(controller, visual, errors);
+                ValidateStanceDuringDribble(controller, visual, clock, errors);
+                ValidateBehindBackPreservesStance(controller, visual, clock, errors);
+
+                ValidateHandCycle(controller, BallHand.Left, leftAnchor, true, contact.gameObject, errors);
+                ValidateCrossoverCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateHesitationCycle(controller, clock, BallHand.Right, rightAnchor, errors);
+                ValidateBehindBackCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateTargetContactScheduling(controller, clock, errors);
+
+                AssertStill("OffensivePlayer", offensePosition, offense.transform.position, errors);
+                AssertStill("Defender", defenderPosition, defender.transform.position, errors);
+                AssertStill("Main Camera", cameraPosition, cameraObject.transform.position, errors);
+                AssertStill("LeftHandBallAnchor", leftAnchorPosition, leftAnchor.position, errors);
+                AssertStill("RightHandBallAnchor", rightAnchorPosition, rightAnchor.position, errors);
+                if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                    errors.Add("Main Camera rotation changed during stance validation.");
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException("BT-ST-01 stance visual validation failed:\n- " + string.Join("\n- ", errors));
+            Debug.Log("BT-ST-01 validation passed: Medium is the default; plain stance flow alternates Low and High through Medium; Low, Medium, and High have distinct prototype silhouettes; stance changes during active dribble motion; behind-the-back does not alter stance; representative pound, crossover, hesitation, behind-the-back, rhythm/contact, stationary-root, and fixed-anchor regressions pass.");
+        }
+
+        private static void ValidateStanceCycleAndVisuals(PoundDribbleController controller,
+            PrototypeStanceVisual visual, ICollection<string> errors)
+        {
+            controller.ResetToStartingHand();
+            visual.RefreshImmediate();
+            if (controller.CurrentStance != PlayerStance.Medium || visual.AppliedStance != PlayerStance.Medium)
+                errors.Add("Play/reset did not begin in Medium stance.");
+            float mediumHeadHeight = visual.HeadLocalHeight;
+
+            PlayerStance[] expected =
+            {
+                PlayerStance.Low, PlayerStance.Medium, PlayerStance.High,
+                PlayerStance.Medium, PlayerStance.Low
+            };
+            float lowHeadHeight = mediumHeadHeight;
+            float highHeadHeight = mediumHeadHeight;
+            for (int i = 0; i < expected.Length; i++)
+            {
+                controller.AdvanceStance();
+                visual.RefreshImmediate();
+                if (controller.CurrentStance != expected[i] || visual.AppliedStance != expected[i])
+                    errors.Add($"Plain Space stance step {i + 1} expected {expected[i]} but reached {controller.CurrentStance}/{visual.AppliedStance}.");
+                if (expected[i] == PlayerStance.Low) lowHeadHeight = visual.HeadLocalHeight;
+                if (expected[i] == PlayerStance.High) highHeadHeight = visual.HeadLocalHeight;
+            }
+
+            if (lowHeadHeight >= mediumHeadHeight - .1f)
+                errors.Add("Low stance is not visibly lower than Medium.");
+            if (highHeadHeight <= mediumHeadHeight + .1f)
+                errors.Add("High stance is not visibly taller than Medium.");
+        }
+
+        private static void ValidateStanceDuringDribble(PoundDribbleController controller,
+            PrototypeStanceVisual visual, RhythmClock clock, ICollection<string> errors)
+        {
+            clock.ResetBallEventHistory();
+            controller.ResetToStartingHand();
+            double input = Math.Max(0, clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds);
+            if (!controller.ProcessInputAtRhythmTime(true, false, input) || !controller.IsDribbling)
+            {
+                errors.Add("Could not start the active dribble used for stance-overlap validation.");
+                return;
+            }
+
+            controller.AdvanceStance();
+            visual.RefreshImmediate();
+            if (!controller.IsDribbling || controller.CurrentStance != PlayerStance.Low || visual.AppliedStance != PlayerStance.Low)
+                errors.Add("Stance did not change to Low while the dribble visual remained active.");
+            CompleteCurrentDribble(controller, errors);
+        }
+
+        private static void ValidateBehindBackPreservesStance(PoundDribbleController controller,
+            PrototypeStanceVisual visual, RhythmClock clock, ICollection<string> errors)
+        {
+            clock.ResetBallEventHistory();
+            controller.ResetToStartingHand();
+            controller.SetStance(PlayerStance.High);
+            visual.RefreshImmediate();
+            double input = Math.Max(0, clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds);
+            if (!controller.ProcessBehindBackInputAtRhythmTime(true, false, input))
+            {
+                errors.Add("Behind-the-back regression input was not accepted.");
+                return;
+            }
+            CompleteCurrentDribble(controller, errors);
+            visual.RefreshImmediate();
+            if (controller.CurrentStance != PlayerStance.High || visual.AppliedStance != PlayerStance.High)
+                errors.Add("Behind-the-back unexpectedly applied a stance destination.");
         }
 
         public static void CapturePreview()

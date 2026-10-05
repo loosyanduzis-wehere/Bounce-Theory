@@ -160,7 +160,7 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 ## 5. Current Task — BT-ST-01
 
 **Title:** Stance State + Space Control Foundation  
-**Status:** IN PROGRESS
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 
@@ -258,7 +258,7 @@ User/manual:
 - [ ] Hold Space + hesitation and confirm the hesitation occurs and stance becomes High.
 - [ ] Confirm W/Up, D/Left, A/Right, and S/Down dribble controls still work as before.
 
-Implementation note: the current stance source patches were made directly through GitHub rather than Codex to test a lower-credit workflow. Plain Space now changes stance on release when it was not used as a modifier. Holding Space with an accepted crossover, pound, or hesitation sets Low, Medium, or High respectively while preserving the dribble action. Unity compile and Play Mode verification are still pending, so this task remains `IN PROGRESS` until local verification succeeds.
+Implementation note: the stance input/state patches were made directly through GitHub. Plain Space changes stance on release when it was not used as a modifier. Holding Space with an accepted crossover, pound, or hesitation sets Low, Medium, or High respectively while preserving the dribble action. A separate prototype-only visual now gives Low, Medium, and High distinct silhouettes without moving the player root or ball anchors. Unity compilation and automated stance/dribble validation pass; user Play Mode verification is still required.
 
 ---
 
