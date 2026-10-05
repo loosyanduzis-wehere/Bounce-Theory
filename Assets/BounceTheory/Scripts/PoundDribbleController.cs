@@ -66,6 +66,9 @@ namespace BounceTheory
         [SerializeField, Range(0.5f, 1.5f)] private float latePitch = 0.91f;
         [SerializeField, Range(0.5f, 1.5f)] private float brokenPitch = 0.78f;
 
+        [Header("Stance Controls")]
+        [SerializeField, Min(0f)] private float stanceModifierGraceSeconds = 0.18f;
+
         [Header("Temporary Debug Feedback")]
         [SerializeField] private GameObject floorContactIndicator;
         [SerializeField] private bool showDebugOverlay = true;
@@ -106,6 +109,8 @@ namespace BounceTheory
         private double lastContactErrorMilliseconds;
         private string lastInputDecision = "Waiting for input.";
         private bool spaceModifierConsumed;
+        private bool pendingPlainSpace;
+        private float pendingPlainSpaceDeadline;
 
         public BallHand StartingHand => startingHand;
         public BallHand CurrentHand => currentHand;
@@ -146,6 +151,8 @@ namespace BounceTheory
         public float HesitationHoldFraction => hesitationHoldFraction;
         public float HesitationLift => hesitationLift;
         public float BehindBackDepthOffset => behindBackDepthOffset;
+        public float StanceModifierGraceSeconds => stanceModifierGraceSeconds;
+        public bool HasPendingPlainSpace => pendingPlainSpace;
 
         public event Action<BallHand> DribbleStarted;
         public event Action<BallHand> FloorContactReached;
@@ -174,6 +181,7 @@ namespace BounceTheory
             behindBackContactLateralProgress = Mathf.Clamp(behindBackContactLateralProgress, .25f, .75f);
             behindBackDepthOffset = Mathf.Max(.1f, behindBackDepthOffset);
             behindBackWrapDepth = Mathf.Max(0f, behindBackWrapDepth);
+            stanceModifierGraceSeconds = Mathf.Max(0f, stanceModifierGraceSeconds);
             SyncAnchorHeights();
             if (!Application.isPlaying)
             {
@@ -201,43 +209,62 @@ namespace BounceTheory
                 bool leftBehindBackPressed = keyboard.sKey.wasPressedThisFrame;
                 bool rightBehindBackPressed = keyboard.downArrowKey.wasPressedThisFrame;
 
-                bool stanceModifierHeld = keyboard.spaceKey.isPressed;
-
                 if (keyboard.spaceKey.wasPressedThisFrame)
+                {
+                    if (pendingPlainSpace)
+                        ResolvePendingPlainSpace();
+
                     spaceModifierConsumed = false;
+                }
+
+                if (keyboard.spaceKey.wasReleasedThisFrame && !spaceModifierConsumed)
+                {
+                    if (stanceModifierGraceSeconds <= 0f)
+                    {
+                        AdvanceStance();
+                    }
+                    else
+                    {
+                        pendingPlainSpace = true;
+                        pendingPlainSpaceDeadline = Time.unscaledTime + stanceModifierGraceSeconds;
+                    }
+                }
+
+                bool stanceModifierActive = keyboard.spaceKey.isPressed ||
+                    (pendingPlainSpace && Time.unscaledTime <= pendingPlainSpaceDeadline);
 
                 bool actionAccepted = ProcessInput(leftPoundPressed, rightPoundPressed);
-                if (actionAccepted && stanceModifierHeld)
+                if (actionAccepted && stanceModifierActive)
                 {
                     SetStance(PlayerStance.Medium);
-                    spaceModifierConsumed = true;
+                    ConsumeSpaceModifier();
                 }
 
                 if (!actionAccepted)
                 {
                     actionAccepted = ProcessCrossoverInput(leftCrossoverPressed, rightCrossoverPressed);
-                    if (actionAccepted && stanceModifierHeld)
+                    if (actionAccepted && stanceModifierActive)
                     {
                         SetStance(PlayerStance.Low);
-                        spaceModifierConsumed = true;
+                        ConsumeSpaceModifier();
                     }
                 }
 
                 if (!actionAccepted)
                 {
                     actionAccepted = ProcessHesitationInput(leftHesitationPressed, rightHesitationPressed);
-                    if (actionAccepted && stanceModifierHeld)
+                    if (actionAccepted && stanceModifierActive)
                     {
                         SetStance(PlayerStance.High);
-                        spaceModifierConsumed = true;
+                        ConsumeSpaceModifier();
                     }
                 }
 
                 if (!actionAccepted)
                     ProcessBehindBackInput(leftBehindBackPressed, rightBehindBackPressed);
 
-                if (keyboard.spaceKey.wasReleasedThisFrame && !spaceModifierConsumed)
-                    AdvanceStance();
+                if (pendingPlainSpace && Time.unscaledTime > pendingPlainSpaceDeadline)
+                    ResolvePendingPlainSpace();
             }
             Tick(Time.deltaTime);
         }
@@ -371,6 +398,18 @@ namespace BounceTheory
             if (returnT >= 1f) CompleteDribble();
         }
 
+        private void ConsumeSpaceModifier()
+        {
+            spaceModifierConsumed = true;
+            pendingPlainSpace = false;
+        }
+
+        private void ResolvePendingPlainSpace()
+        {
+            pendingPlainSpace = false;
+            AdvanceStance();
+        }
+
         public void SetStance(PlayerStance stance)
         {
             currentStance = stance;
@@ -416,6 +455,8 @@ namespace BounceTheory
             ClearPendingInput();
             lastInputDecision = "Reset to starting hand; waiting for input.";
             spaceModifierConsumed = false;
+            pendingPlainSpace = false;
+            pendingPlainSpaceDeadline = 0f;
             SetContactIndicator(false);
             SyncAnchorHeights();
             SnapToCurrentHand();
@@ -741,7 +782,7 @@ namespace BounceTheory
         {
             if (!showDebugOverlay) return;
             const float width = 540f;
-            GUI.Box(new Rect(18, 18, width, 414), "Bounce Theory — Target Contact / Rhythm Debug");
+            GUI.Box(new Rect(18, 18, width, 436), "Bounce Theory — Target Contact / Rhythm Debug");
             GUI.Label(new Rect(32, 45, width - 24, 22), $"Current hand: {currentHand}   Stance: {currentStance}   Action: {activeAction}   Phase: {logicalPhase}");
             if (rhythmClock != null)
             {
@@ -767,7 +808,8 @@ namespace BounceTheory
             GUI.Label(new Rect(32, 375, width - 24, 22), currentHand == BallHand.Left
                 ? "Inputs: W pound / D cross / A hesi / S behind-back / Space stance"
                 : "Inputs: Up pound / Left cross / Right hesi / Down behind-back / Space stance");
-            GUI.Label(new Rect(32, 397, width - 24, 22), "Impact sound fires only at measured FloorContact.");
+            GUI.Label(new Rect(32, 397, width - 24, 22), $"Stance modifier grace: {stanceModifierGraceSeconds * 1000f:0} ms   Pending Space: {(pendingPlainSpace ? "Yes" : "No")}");
+            GUI.Label(new Rect(32, 419, width - 24, 22), "Impact sound fires only at measured FloorContact.");
         }
     }
 }
