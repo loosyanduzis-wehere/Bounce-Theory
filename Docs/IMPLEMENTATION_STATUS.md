@@ -3,7 +3,7 @@
 **Status:** Active prototype  
 **Completed milestone:** Ball Control Language — core vocabulary  
 **Next planned milestone:** Stance  
-**Current task:** `BT-ST-01 — Stance State + Plain Space Flow`  
+**Current task:** `BT-ST-02 — Stance-Dependent Pound Bounce Height`  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
@@ -11,7 +11,7 @@
 **Project path:** `C:\Users\jerry\Bounce Theory v2`  
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
-**Last updated:** 2026-10-04
+**Last updated:** 2026-10-05
 
 > This file is the current implementation handoff for Codex.
 > It describes what exists now and the one task Codex is allowed to work on next.
@@ -157,108 +157,94 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ---
 
-## 5. Current Task — BT-ST-01
+## 5. Current Task — BT-ST-02
 
-**Title:** Stance State + Space Control Foundation  
-**Status:** IN PROGRESS
+**Title:** Stance-Dependent Pound Bounce Height  
+**Status:** PLANNED
 
 ### Goal
 
-Create the minimum three-stance gameplay foundation, support the approved plain-Space flow, and wire the first direct stance modifier inputs into existing dribble actions:
+Make the three stance states begin affecting basketball behavior by giving the **pound dribble** a clearly different vertical profile in Low, Medium, and High stance while preserving the existing rhythm/contact-timing architecture.
 
-`Medium → Low → Medium → High → Medium → Low → ...`
+This is a focused prototype experiment. Do not generalize stance effects to every dribble action yet.
 
-Direct stance modifiers:
+### Desired Behavior
 
-- **Space + Crossover → Low**
-- **Space + Pound → Medium**
-- **Space + Hesitation → High**
-
-This task proves stance state and fast mid-dribble stance switching before stance begins modifying dribble behavior.
+- **Medium stance** preserves the current pound-dribble behavior exactly as the baseline.
+- **Low stance** produces a visibly lower/tighter pound-dribble profile.
+- **High stance** produces a visibly higher/more upright pound-dribble profile.
+- The differences should be obvious enough to feel in Play Mode but remain prototype tuning rather than locked final values.
+- The scheduled floor-contact target remains authoritative.
+- The pound input keeps its real DSP timestamp and normal rhythm judgment regardless of stance.
+- Stance changes may still occur during active dribble motion.
 
 ### Why This Task Exists
 
-The core dribble vocabulary is now working. Stance is the next gameplay layer, but the first implementation should establish only the state model and basic Space control rather than mixing in stance-dependent trajectories, timing, exposure, or modifier combinations.
+BT-ST-01 proved the three-state control language, direct stance modifiers, and prototype stance silhouettes.
+
+The design now needs one isolated test of whether stance actually changing move behavior creates useful basketball decisions. Pound is the cleanest first experiment because it provides a simple vertical action without also introducing lateral ownership transfer or hesitation-specific presentation.
 
 ### Scope
 
-- Add explicit **Low**, **Medium**, and **High** stance states.
-- Default the player to **Medium** stance.
-- Implement plain **Space** flow exactly as:
-  - Medium → Low
-  - Low → Medium
-  - Medium → High
-  - High → Medium
-  - then repeat.
-- Preserve the alternating extreme so returning to Medium remembers whether the next plain-Space destination should be Low or High.
-- Allow stance input during an active dribble sequence; do not gate Space on ball-animation completion.
-- Make the current stance temporarily readable in Play Mode using existing debug feedback or another minimal prototype-only indication.
-- Holding Space while an accepted crossover, pound, or hesitation input occurs must set the mapped stance while still performing that dribble action.
-- A modified dribble must consume that Space press so releasing Space does not also advance the plain-Space stance flow.
-- Preserve all existing pound, crossover, hesitation, behind-the-back, rhythm, and contact behavior.
-
-### Relevant Files / Systems
-
-Likely relevant:
-
-- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
-- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
-- `Assets/Scenes/BounceTheoryPrototype.unity`
-
-Codex should inspect the project and choose the smallest sensible owner for stance state. Prefer keeping stance state conceptually separate from visual animation timing.
+- Add tunable prototype values for Low and High pound-dribble vertical behavior.
+- Keep Medium as the exact existing baseline.
+- Apply the stance-specific profile only when a **new pound action is accepted**.
+- Capture/use the relevant stance for that accepted pound without making animation completion authoritative.
+- Preserve the existing global-grid target floor-contact time.
+- Preserve normal/compressed/unreachable contact handling.
+- Preserve stance controls and the 0.18-second modifier grace behavior from BT-ST-01.
+- Make the active pound's stance/profile readable in debug output if useful for verification.
 
 ### Acceptance Criteria
 
-- [ ] The prototype exposes three stance states: Low, Medium, and High.
-- [ ] Play begins in Medium stance.
-- [ ] Repeated plain Space presses produce `Medium → Low → Medium → High → Medium → Low...`.
-- [ ] Low always returns to Medium with one plain Space press.
-- [ ] High always returns to Medium with one plain Space press.
-- [ ] Returning to Medium preserves which extreme should come next.
-- [ ] Space can change stance while a dribble visual is still active.
-- [ ] Current stance is readable during prototype playtesting.
-- [ ] Holding Space + Crossover performs the crossover and leaves the player in Low stance.
-- [ ] Holding Space + Pound performs the pound and leaves the player in Medium stance.
-- [ ] Holding Space + Hesitation performs the hesitation and leaves the player in High stance.
-- [ ] Releasing Space after a modified dribble does not also advance the plain-Space stance cycle.
-- [ ] Existing dribble controls and rhythm/contact behavior remain unchanged.
+- [ ] Medium stance pound looks and behaves like the current baseline.
+- [ ] Low stance pound is visibly lower/tighter than Medium.
+- [ ] High stance pound is visibly higher than Medium.
+- [ ] All three still target the same rhythm/contact architecture rather than separate stance-specific clocks.
+- [ ] Stance does not change the original dribble keypress timestamp.
+- [ ] A stance change during an already active pound does not retroactively rewrite that pound's accepted rhythm judgment.
+- [ ] Crossover, hesitation, and behind-the-back behavior are unchanged.
+- [ ] Plain Space and Space + dribble stance controls remain intact.
+- [ ] Player root, defender, and camera remain stationary.
 - [ ] Project compiles with no new errors.
 
 ### Out of Scope
 
 Do **not** implement during this task:
 
-- Any special `Space + Behind-the-back` behavior
-- Stance effects on bounce height or trajectory
-- Stance effects on rhythm/timing windows
-- Stance effects on exposure, defender reaction, or move legality
-- Final stance animation
-- Player locomotion
-- Defender behavior
-- Unrelated refactors
+- stance-dependent crossover trajectory,
+- stance-dependent hesitation behavior,
+- stance-dependent behind-the-back behavior,
+- stance-dependent rhythmic intervals,
+- stance-dependent timing windows,
+- ball exposure,
+- defender reactions,
+- move legality/follow-up restrictions,
+- final animation,
+- player locomotion,
+- unrelated refactors.
 
 ### Verification Required
 
 Automated:
 
 - [ ] Project compiles.
-- [ ] Existing dribble/rhythm/contact validators still pass.
-- [ ] Add targeted validation for the complete plain-Space stance cycle.
-- [ ] Verify stance can change independently of current dribble visual completion.
+- [ ] Add targeted checks proving Low < Medium < High for the accepted pound vertical profile.
+- [ ] Verify Medium retains the previous baseline tuning.
+- [ ] Verify floor-contact targeting remains grid-driven and within existing tolerance.
+- [ ] Verify crossover, hesitation, and behind-the-back regressions still pass.
 - [ ] Review `git diff`.
 - [ ] Confirm unrelated files were not changed.
 
 User/manual:
 
-- [ ] Start Play Mode and confirm the initial stance is Medium.
-- [ ] Press Space repeatedly and confirm `Medium → Low → Medium → High → Medium → Low...`.
-- [ ] Press Space during active dribble motion and confirm stance still changes.
-- [ ] Hold Space + crossover and confirm the crossover occurs and stance becomes Low.
-- [ ] Hold Space + pound and confirm the pound occurs and stance becomes Medium.
-- [ ] Hold Space + hesitation and confirm the hesitation occurs and stance becomes High.
-- [ ] Confirm W/Up, D/Left, A/Right, and S/Down dribble controls still work as before.
+- [ ] Compare repeated pounds in Low, Medium, and High stance.
+- [ ] Confirm Low feels/readably lower than Medium.
+- [ ] Confirm High feels/readably higher than Medium.
+- [ ] Confirm rhythm still feels like the same underlying pulse.
+- [ ] Confirm stance controls and other dribble moves still work.
 
-Implementation note: the stance input/state patches were made directly through GitHub. A 0.18-second post-release stance-modifier grace window is now being tested: an accepted crossover, pound, or hesitation within that window still maps to Low, Medium, or High without changing the dribble input timestamp or rhythm judgment. If no mapped dribble arrives before the window expires, the Space input resolves as the normal plain-Space stance advance. A separate prototype-only visual gives Low, Medium, and High distinct silhouettes without moving the player root or ball anchors. The prior revision compiled and validated, but this grace-window revision still requires a fresh Unity compile and Play Mode check.
+After automated verification, set this task to `AWAITING PLAYTEST`, commit/push, and stop for user verification. Do not mark COMPLETE until the user accepts the Play Mode behavior.
 
 ---
 
