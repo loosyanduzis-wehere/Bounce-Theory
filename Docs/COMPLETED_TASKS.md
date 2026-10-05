@@ -152,4 +152,40 @@ User Play Mode verification was accepted on 2026-10-04.
 The initial core dribble vocabulary is now working: pound, crossover, hesitation, and behind-the-back. Future ball-control work can deepen branching, legality, and animation without replacing this shared rhythm architecture.
 
 ---
+## BT-ST-01 — Stance State + Space Control Foundation
+
+**Completed:** 2026-10-05  
+**Milestone:** Stance
+
+### Result
+
+The prototype now has an explicit three-state stance language that can operate during active dribble play without making animation completion authoritative.
+
+Key behavior includes:
+
+- Stance states are **Low**, **Medium**, and **High**.
+- **Medium** is the default/home stance.
+- Plain Space follows:
+  `Medium → Low → Medium → High → Medium → Low...`
+- Direct stance modifiers work while preserving the basketball action:
+  - **Space + Crossover → Low**
+  - **Space + Pound → Medium**
+  - **Space + Hesitation → High**
+- **Space + Behind-the-back** remains intentionally unassigned.
+- A short prototype stance-modifier grace window allows a dribble input shortly after Space is released without changing the dribble input timestamp or rhythm judgment.
+- Low, Medium, and High have distinct prototype silhouettes for Play Mode readability.
+- Stance can change while a dribble visual is still active.
+
+### Verification
+
+The earlier stance revision compiled and passed targeted stance/dribble validation. User Play Mode testing confirmed that the stance flow and direct modifier controls work.
+
+The modifier remains intentionally skillful. Exact modifier-window tuning and final stance feel are **provisional** and should be revisited alongside animation, input feel, and presentation rather than treated as locked design values.
+
+### Follow-Up
+
+The next stance work should begin making stance mechanically meaningful one variable at a time while preserving the existing rhythm/contact architecture.
+
+---
+
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
