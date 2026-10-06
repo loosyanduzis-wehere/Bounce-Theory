@@ -1,9 +1,9 @@
 # Bounce Theory — Implementation Status
 
 **Status:** Active prototype  
-**Completed milestone:** Ball Control Language — core vocabulary  
-**Next planned milestone:** Stance  
-**Current task:** `BT-ST-03 — Complete Prototype Stance Behavior Pass`  
+**Completed milestone:** Stance — prototype complete  
+**Next planned milestone:** Dribble State / Possession Foundation  
+**Current task:** None — stance milestone accepted; awaiting explicit integration approval  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
@@ -11,7 +11,7 @@
 **Project path:** `C:\Users\jerry\Bounce Theory v2`  
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
-**Last updated:** 2026-10-05
+**Last updated:** 2026-10-06
 
 > This file is the current implementation handoff for Codex.
 > It describes what exists now and the one task Codex is allowed to work on next.
@@ -157,137 +157,15 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ---
 
-## 5. Current Task — BT-ST-03
+## 5. Current Task
 
-**Title:** Complete Prototype Stance Behavior Pass  
-**Status:** AWAITING PLAYTEST
+**Status:** NONE
 
-### Goal
+BT-ST-03 was accepted in user Play Mode on **2026-10-06**.
 
-Extend the existing stance system so Low, Medium, and High produce clearly different **prototype expressions across the current dribble vocabulary**, while preserving the existing rhythm/contact architecture and keeping all stance tuning reversible.
+The Stance milestone is **PROTOTYPE COMPLETE**. Do not begin another task on this branch. The next feature work is isolated on `milestone/dribble-state`.
 
-This is intentionally a larger Codex task than the previous stance chunks so related stance behavior can be implemented and verified together.
-
-### Working Stance Identity
-
-Use the following prototype identity consistently:
-
-- **Low:** compact, lower, tighter basketball expression.
-- **Medium:** current neutral/baseline behavior.
-- **High:** elevated, more upright/open basketball expression.
-
-These are prototype presentation/gameplay profiles, not locked final animation values.
-
-### Existing Behavior To Preserve
-
-Already implemented and accepted:
-
-- Low / Medium / High stance state.
-- Medium default stance.
-- Plain Space stance flow.
-- Space + Crossover → Low.
-- Space + Pound → Medium.
-- Space + Hesitation → High.
-- Space + Behind-the-back remains unassigned.
-- 0.18-second stance-modifier grace window.
-- Prototype Low / Medium / High player silhouettes.
-- Pound dribble captures stance at acceptance and uses Low / Medium / High vertical profiles.
-- Medium pound remains the original baseline.
-
-### Scope
-
-Extend stance-dependent move expression to the remaining existing dribble actions:
-
-#### Crossover
-
-- Capture the accepted stance when the crossover is accepted.
-- Preserve Medium crossover as the current baseline.
-- Give Low and High distinct tunable prototype trajectory/readability profiles consistent with the working stance identity.
-- Preserve hand transfer, floor-contact target, DSP input timestamp, and rhythm judgment.
-
-#### Hesitation
-
-- Capture the accepted stance when hesitation is accepted.
-- Preserve Medium hesitation as the current baseline.
-- Give Low and High distinct tunable prototype hold/lift/body-readability behavior consistent with the working stance identity.
-- Preserve same-hand ownership, floor-contact target, DSP input timestamp, and rhythm judgment.
-
-#### Behind-the-Back
-
-- Capture the accepted stance when behind-the-back is accepted.
-- Preserve Medium behind-the-back as the current baseline.
-- Give Low and High distinct tunable prototype depth/height/wrap readability consistent with the working stance identity.
-- Do **not** assign a special Space + Behind-the-back stance destination.
-- Preserve hand transfer, floor-contact target, DSP input timestamp, and rhythm judgment.
-
-### Architecture Requirements
-
-- Capture stance at **action acceptance**, not continuously during visual motion.
-- Changing stance after an action is accepted must not retroactively rewrite that active action's accepted stance profile.
-- Queued/pending actions must preserve the stance profile they were accepted with.
-- Gameplay/rhythm state remains authoritative over animation completion.
-- Do not create separate clocks or timing systems per stance.
-- Prefer tunable serialized prototype values rather than hard-coded final-feel constants.
-- Keep Medium behavior equal to the existing pre-stance baseline wherever practical.
-
-### Acceptance Criteria
-
-- [ ] Low / Medium / High produce visibly/readably different crossover profiles.
-- [ ] Low / Medium / High produce visibly/readably different hesitation profiles.
-- [ ] Low / Medium / High produce visibly/readably different behind-the-back profiles.
-- [ ] Medium remains the current baseline for all three actions.
-- [ ] Pound stance behavior from BT-ST-02 remains intact.
-- [ ] Each action captures stance at acceptance and retains it if stance changes later.
-- [ ] Pending actions retain the stance they were accepted with.
-- [ ] Equivalent inputs across stances preserve the same DSP timestamp, rhythm judgment, and target contact time.
-- [ ] Hand ownership rules remain correct.
-- [ ] Plain Space and direct stance modifiers remain intact.
-- [ ] Space + Behind-the-back remains unassigned.
-- [ ] Player root, defender, and camera remain stationary.
-- [ ] Project compiles with no new errors.
-
-### Out of Scope
-
-Do **not** implement during this task:
-
-- stance-dependent rhythm intervals,
-- stance-dependent timing windows,
-- ball exposure,
-- legal/illegal follow-up restrictions,
-- defender reaction,
-- defender AI,
-- steal opportunities,
-- shots, drives, or finishes,
-- final animation assets,
-- conventional locomotion,
-- unrelated refactors.
-
-### Verification Required
-
-Automated:
-
-- [ ] Project compiles.
-- [ ] Add targeted stance-profile validation for crossover, hesitation, and behind-the-back.
-- [ ] Verify Medium retains the current baseline behavior for each move.
-- [ ] Verify stance capture survives later stance changes.
-- [ ] Verify queued actions preserve their accepted stance profile.
-- [ ] Verify equivalent inputs keep the same DSP timestamp, rhythm judgment, and target floor-contact time across stance profiles.
-- [ ] Run representative pound, rhythm/contact, and stance-control regressions.
-- [ ] Review `git diff`.
-- [ ] Confirm unrelated files were not changed.
-
-User/manual:
-
-- [ ] Compare crossover in Low / Medium / High.
-- [ ] Compare hesitation in Low / Medium / High.
-- [ ] Compare behind-the-back in Low / Medium / High.
-- [ ] Confirm Medium still feels like the existing baseline.
-- [ ] Confirm stance differences are readable even if final tuning remains provisional until animation.
-- [ ] Confirm all stance controls and pound behavior still work.
-
-After automated verification, set this task to `AWAITING PLAYTEST`, commit/push `milestone/stance`, and stop for user verification.
-
-Do not mark COMPLETE until the user accepts the Play Mode behavior.
+No merge from `milestone/stance` into `dev` should occur without explicit user approval.
 
 ---
 
