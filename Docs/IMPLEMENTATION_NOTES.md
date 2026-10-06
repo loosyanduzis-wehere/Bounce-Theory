@@ -44,3 +44,12 @@
   ChatGPT architecture/Unknowns Pass → GitHub implementation → Git handoff → fresh Codex review/fix/verification → user Play Mode when needed.
 - Codex is not the default first implementer for ordinary feature work.
 - Use Codex as primary implementer when local iterative Unity build/test/debug work or broad mechanical changes make that clearly more efficient.
+
+
+## Dribble Continuation / Restart Discovery
+
+- Parallel next-feature branch: `milestone/dribble-state`, created from `milestone/stance` while BT-ST-03 remains in user Play Mode verification.
+- The current rhythm planner uses a finite continuation vocabulary through a maximum prototype interval of `2.0 beats`.
+- After the latest target derived from the previous floor-contact reference has passed, the current planner can return a target in the past; `BeginDribble` then reports the target as unreachable. Because no new floor event is registered, repeated continuation attempts can remain stuck on the same expired reference.
+- The next feature should convert this dead continuation boundary into an explicit prototype possession end state and provide a restart path that resets ball/stance/transient input state and rhythm event history.
+- Exact final basketball meaning of this boundary remains open; do not hard-code it as permanent travel, double-dribble, mishandle, or gather semantics yet.
