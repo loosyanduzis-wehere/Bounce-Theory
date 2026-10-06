@@ -36,15 +36,22 @@ Completed:
 - Basic hesitation foundation — `BT-BC-07`
 - Basic behind-the-back foundation — `BT-BC-08`
 
-Current follow-up foundation:
+Prototype dribble-state implementation — **AWAITING CODEX VERIFICATION**:
 
-- `BT-DS-01` — explicit possession lifecycle, restart path, previous-action context, and clean handling of exhausted rhythmic continuation windows.
+- `BT-DS-01` — possession lifecycle and restart.
+- Explicit resolved-action sequence context.
+- Follow-up relation classification and queued-context preservation.
+- Secure / Recovering / Exposed ball-control quality derived from rhythm judgment.
+- Clean handling of exhausted finite rhythmic continuation windows.
+- Existing hand / ball-phase / stance / timing / follow-up-input branching preserved.
 
-Planned areas:
-- Deeper ball-state branching
-- Move-specific legal/favored follow-up transitions
-- Interaction between rhythmic intervals and different dribble actions
-- Revisit continuation/grace timing after the ball returns to control. Preserve the possibility of gathered/dead-ball consequences, but later test whether Easy should allow additional late-input grace without weakening rhythm scoring.
+Deferred until interacting systems exist:
+
+- Final move-specific legal/favored follow-up rules.
+- Stance-dependent follow-up advantages.
+- Defender consequences for Recovering / Exposed states.
+- Final gather / mishandle / violation semantics.
+- Final continuation/grace tuning by difficulty.
 
 Do not implement all of these as one task. Promote one small task at a time into `IMPLEMENTATION_STATUS.md`.
 
