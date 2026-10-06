@@ -60,3 +60,31 @@
 - BT-ST-03 user Play Mode verification was accepted on **2026-10-06**.
 - Milestone 3 — Stance is now **PROTOTYPE COMPLETE**.
 - Remaining stance/rhythm, stance/exposure, final animation, and exact feel tuning are deferred until the systems they interact with exist.
+
+
+## Complete Prototype Dribble-State Implementation
+
+ChatGPT/GitHub implementation for the full prototype dribble-state milestone is now present on `milestone/dribble-state` and awaits the consolidated Codex review/compile/validator pass.
+
+Implemented state dimensions:
+
+- **Possession:** Active / Ended.
+- **Motion phase:** Controlled / Descending / FloorContact / Returning.
+- **Hand ownership:** Left / Right.
+- **Stance:** Low / Medium / High.
+- **Control quality:** Secure / Recovering / Exposed.
+- **Sequence context:** previous resolved action, stance, judgment, resulting hand, resolved control quality, sequence action count.
+- **Follow-up relation:** FirstAction / Repeat / SameHandVariation / Transfer / CounterTransfer.
+- **Pending context:** accepted stance, timing/contact plan, and follow-up relation are preserved until queued execution.
+
+Control-quality mapping:
+
+- Perfect / Good → Secure.
+- Early / Late → Recovering.
+- Broken Rhythm → Exposed.
+
+The current system does not impose a canned combo table. Existing physical/context rules remain authoritative: possession state, active hand, ball phase, reachability, one pending slot, stance profile, rhythm judgment, and follow-up input.
+
+The follow-up relation is captured at input acceptance. A queued action therefore does not recompute its sequence relation when it later becomes visually/physically executable.
+
+The branch was created while `milestone/stance` was still under user playtest. The stance branch later received documentation-only completion commits. Their accepted stance state has been carried into this branch's documentation; no accepted stance gameplay code is missing from the dribble-state branch.
