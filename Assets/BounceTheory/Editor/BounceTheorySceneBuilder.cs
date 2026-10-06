@@ -1529,7 +1529,7 @@ namespace BounceTheory.Editor
                     return;
                 }
                 input = clock.ElapsedSecondsAtDspTime(controller.LastActualFloorContactDsp) +
-                        .08 + returnOverlapSeconds;
+                        controller.ActiveContactHold + returnOverlapSeconds;
             }
 
             if (!ProcessCurrentHandActionAtRhythmTime(controller, action, input))
