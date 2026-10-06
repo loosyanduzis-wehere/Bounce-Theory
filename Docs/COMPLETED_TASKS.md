@@ -218,4 +218,36 @@ Do not over-tune the numeric pound-height values yet. Final perceptual differenc
 
 ---
 
+## BT-ST-03 — Complete Prototype Stance Behavior Pass
+
+**Completed:** 2026-10-06  
+**Milestone:** Stance
+
+### Result
+
+Low, Medium, and High now produce distinct prototype behavior across the full current dribble vocabulary while preserving the shared rhythm/contact architecture.
+
+Implemented and accepted:
+
+- stance-aware Pound profiles,
+- stance-aware Crossover profiles,
+- stance-aware Hesitation profiles,
+- stance-aware Behind-the-back profiles,
+- Medium remains the neutral/baseline behavior,
+- each action captures stance at acceptance,
+- queued actions preserve their accepted stance,
+- later stance changes do not rewrite active-action timing/profile,
+- Space + Behind-the-back remains intentionally unassigned,
+- prototype stance visuals remain placeholders for later animation/presentation work.
+
+### Verification
+
+Automated stance/dribble validation passed before Play Mode handoff.
+
+User Play Mode verification was accepted on **2026-10-06**.
+
+Current numeric stance differences and the `0.18 s` modifier grace remain tunable prototype values and should be revisited during animation/input-feel work rather than treated as final design constants.
+
+---
+
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
