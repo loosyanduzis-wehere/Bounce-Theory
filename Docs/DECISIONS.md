@@ -118,3 +118,33 @@ The current rhythm planner intentionally supports a finite interval vocabulary. 
 Separating the possession lifecycle from the final basketball-specific reason allows the prototype to recover cleanly now while leaving future systems free to reinterpret the same boundary as a gather, mishandle, steal, violation, finish, or another outcome.
 
 A lack of input by itself is **not** automatically possession failure because hesitation and intentional pauses remain valid design concepts.
+
+
+---
+
+## Decision 006 — Dribble State Uses Orthogonal Context Dimensions
+
+**Status:** Active
+
+### Decision
+
+Do not collapse the entire dribble state machine into one giant state enum.
+
+Represent the prototype through separate, composable dimensions:
+
+- possession lifecycle,
+- ball motion phase,
+- hand ownership,
+- stance,
+- timing judgment / ball-control quality,
+- previous resolved action context,
+- accepted follow-up relation,
+- pending action context.
+
+Follow-up relations describe sequence context without creating a fixed combo system.
+
+### Why
+
+Bounce Theory actions are rhythmically independent but physically contextual. A single monolithic enum would create a combinatorial state explosion and would encourage animation-shaped state definitions.
+
+Keeping the dimensions separate lets the action-decision layer ask the relevant questions—hand, phase, stance, timing, previous move, possession, and follow-up—while preserving the existing rhythm-first input architecture.
