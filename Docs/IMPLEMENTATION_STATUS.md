@@ -366,6 +366,28 @@ Keep status `IN PROGRESS` until Codex has compiled, run the targeted validator/r
 
 Do not mark COMPLETE until user/manual verification is accepted.
 
+### GitHub Implementation State
+
+**ChatGPT first implementation: COMPLETE FOR HANDOFF**  
+**Executable verification: NOT YET CLAIMED**  
+**Task status remains: IN PROGRESS**
+
+The full prototype dribble-state scope in this task has now been implemented through GitHub, including:
+
+- possession lifecycle/restart,
+- finite continuation expiry handling,
+- resolved sequence context,
+- follow-up relation classification,
+- pending relation preservation,
+- Secure / Recovering / Exposed control quality,
+- sequence action count/reset,
+- expanded `BT-DS-01 Complete Dribble State` validator,
+- representative existing-system regression calls.
+
+The next action is one consolidated Codex fresh-context review/fixer/verifier pass over the entire branch.
+
+Codex should not assume the implementation is correct from this summary. It must inspect the actual diff and surrounding code, compile the Unity project, run the complete BT-DS-01 validator plus relevant regressions, fix clear in-scope material issues, rerun verification, and leave the task `AWAITING PLAYTEST` only if executable verification succeeds.
+
 ---
 
 ## 6. Current Task Template
