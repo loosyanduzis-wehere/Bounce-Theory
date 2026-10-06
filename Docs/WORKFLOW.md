@@ -1,78 +1,90 @@
 # Bounce Theory — Development Workflow
 
-## Project Knowledge Flow
+> `AGENTS.md` is the authoritative operating instruction file.
+> This document is the concise project knowledge-flow map so a fresh chat, Codex session, or collaborator knows where information belongs.
+
+## File Roles
+
+- `Docs/Game Design.md` — authoritative game/design source of truth.
+- `Docs/ROADMAP.md` — future milestones and planned work only.
+- `Docs/IMPLEMENTATION_STATUS.md` — current implementation state, one active feature/task, success criteria, and verification gate.
+- `Docs/COMPLETED_TASKS.md` — concise completed implementation history.
+- `Docs/DECISIONS.md` — durable architecture/design decisions and rationale.
+- `Docs/OPEN_QUESTIONS.md` — recognized unresolved decisions; never silently guess these.
+- `Docs/IMPLEMENTATION_NOTES.md` — active technical realities, workarounds, discoveries, and implementation constraints.
+- `AGENTS.md` — workflow rules, Git safety, AI role split, verification rules.
+- Git history — exact code/document changes.
+
+Do not duplicate the same information across files unless a short pointer is needed for navigation.
+
+## Standard Development Loop
 
 ```text
-Game Design / Source of Truth
-        ↓
-ROADMAP
-        ↓
-IMPLEMENTATION_STATUS
-        ↓
-Codex implementation
-        ↓
-automated verification
-        ↓
-AWAITING PLAYTEST when needed
-        ↓
-user verification
-        ↓
-COMPLETED_TASKS
-        ↓
-Git history
+Goal
+→ Unknowns Pass
+→ targeted research/reference hunt
+→ decisions + Open Questions
+→ implementation plan
+→ observable success criteria + verification plan
+→ ChatGPT implements one coherent feature-sized change through GitHub
+→ Git commit/branch/PR handoff
+→ Codex fresh-context review + build/test + scoped repair
+→ user/manual verification when required
+→ capture learnings in the correct file
+→ next coherent chunk
 ```
 
-### File Roles
+Guiding size rule:
 
-- `Game Design.md` explains what Bounce Theory is.
-- `ROADMAP.md` describes future planned work.
-- `IMPLEMENTATION_STATUS.md` describes what exists now and contains the one active implementation task.
-- `COMPLETED_TASKS.md` provides concise readable implementation history.
-- `DECISIONS.md` records why important architecture choices exist.
-- Git records exact code changes.
+> Small enough to reason about; large enough to justify the context/setup cost.
 
-The Roadmap is not an automatic queue.
+## AI Role Split
 
----
+### Main ChatGPT conversation
 
-## Task Workflow
+Default architect and first implementer for normal medium/large work:
 
-Before implementation:
+- inspect the repository,
+- run the Unknowns Pass,
+- resolve or record unknowns,
+- define success/verification,
+- implement a coherent feature-sized change through GitHub.
 
-1. User + ChatGPT choose one small next task.
-2. Resolve important design questions conversationally.
-3. Promote that task into `IMPLEMENTATION_STATUS.md`.
-4. Give it a stable task ID, goal, scope, acceptance criteria, and explicit out-of-scope items.
+### Codex
 
-Codex then:
+Default fresh reviewer/fixer/verifier after Git handoff:
 
-1. Reads `AGENTS.md`.
-2. Reads `IMPLEMENTATION_STATUS.md`.
-3. Reads only relevant supporting documentation.
-4. Inspects the actual implementation.
-5. Sets the task to `IN PROGRESS`.
-6. Implements only that task.
-7. Runs relevant automated verification.
-8. Reviews `git status` and `git diff`.
-9. Commits and pushes the task.
+- inspect the actual diff,
+- compile/build,
+- run targeted validators/tests,
+- find correctness/regression/architecture/edge-case problems,
+- fix clear material in-scope issues,
+- rerun verification,
+- report remaining manual tests.
 
-If hands-on verification is required:
+Use Codex as primary implementer only when local iterative build/test/debug loops, broad mechanical repository changes, migrations, or refactors materially benefit from it.
 
-1. Set the task to `AWAITING PLAYTEST`.
-2. User tests it.
-3. If it passes, mark it `COMPLETE`.
-4. If it fails, return the same task ID to `IN PROGRESS`.
+## Status Flow
 
-After completion:
+```text
+PLANNED
+→ IN PROGRESS
+→ AWAITING PLAYTEST
+→ COMPLETE
+```
+
+Runtime-dependent gameplay/visual/audio/feel work cannot become COMPLETE from automated verification alone.
+
+After user-confirmed completion:
 
 - append a concise record to `COMPLETED_TASKS.md`,
 - update `IMPLEMENTATION_STATUS.md`,
-- update the Roadmap when applicable,
-- record a decision only when an important architectural/design choice was actually made.
+- update `ROADMAP.md` when milestone state changes,
+- update `DECISIONS.md` only for durable decisions,
+- update `OPEN_QUESTIONS.md` when a question is resolved or newly recognized,
+- keep `IMPLEMENTATION_NOTES.md` limited to still-relevant technical realities.
 
----
-
-## Git Branch Workflow
+## Git Branch Model
 
 ```text
 main
@@ -80,40 +92,25 @@ main
     └── milestone/<name>
 ```
 
-### `main`
+- `main` = stable checkpoints/releases.
+- `dev` = completed-milestone integration.
+- `milestone/<name>` = active milestone development.
+- Do not merge milestone → dev without explicit user approval.
+- Do not merge dev → main without explicit user approval.
+- Do not rebase/reset/force-push shared history unless explicitly instructed.
 
-Stable checkpoints/releases.
+Detailed branch synchronization and safety rules live in `AGENTS.md`.
 
-Do not merge `dev` into `main` without explicit user approval.
+## Context Hygiene
 
-### `dev`
+At meaningful checkpoints, audit project context:
 
-Integration branch for completed milestones.
+- remove stale current-state claims,
+- move completed narratives out of `IMPLEMENTATION_STATUS.md`,
+- move future ideas out of implementation notes and into `ROADMAP.md` or `OPEN_QUESTIONS.md`,
+- remove resolved questions from `OPEN_QUESTIONS.md`,
+- keep temporary tuning out of the Source of Truth unless intentionally promoted,
+- avoid copying conversation summaries into project files,
+- prefer pointers over duplicate prose.
 
-Do not merge a milestone into `dev` without explicit user approval.
-
-### `milestone/<name>`
-
-Active milestone development branch.
-
-Small implementation tasks become commits on the current milestone branch instead of receiving a new branch for every tiny change.
-
----
-
-## Normal Implementation Loop
-
-```text
-choose task
-→ document Current Task
-→ implement
-→ verify
-→ review diff
-→ commit
-→ push
-→ playtest if needed
-→ mark complete
-→ update docs
-→ choose next task
-```
-
-Do not silently move to the next Roadmap item.
+The repository files should be sufficient to restart development in a new conversation without relying on old chat context.
