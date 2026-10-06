@@ -10,7 +10,8 @@
 - **Final stance expression:** exact Low / Medium / High trajectory, posture, speed, and animation differences remain tuning questions. Current prototype profiles prove the state architecture, not final feel.
 - **Stance and rhythm:** decide whether stance eventually changes rhythmic intervals or timing forgiveness, and if so how, without creating separate stance-specific clocks.
 - **Stance and exposure:** define how Low / Medium / High affect ball exposure and defender steal opportunities.
-- **Stance-dependent follow-ups:** define which follow-up actions become more or less favorable or physically legal from each stance.
+- **Stance-dependent follow-ups:** define which follow-up actions become more or less favorable or physically legal from each stance. The prototype now preserves stance and follow-up relation context but does not impose final restrictions.
+- **Final follow-up legality/advantage:** decide whether specific previous-action → next-action relationships should become favored, redirected, impossible, or merely riskier once defender/exposure systems exist. Do not convert the current relation labels into a canned combo table by default.
 - **Space + Behind-the-back:** no stance destination is assigned. Leave unassigned until it has a clear gameplay purpose.
 - **Continuation / grace after a bounce:** decide how much late continuation forgiveness Easy mode should provide after control returns without weakening rhythm scoring.
 - **Bounce resolution:** exact final rules for gather, mishandle, exposed ball, travel, double-dribble, and legal intentional pauses remain unresolved. The prototype may end a possession when a new dribble is attempted after the current finite rhythmic continuation window is exhausted; this is a testing rule, not the final basketball interpretation.
