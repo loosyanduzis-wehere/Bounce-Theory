@@ -91,3 +91,30 @@ Space also acts as a stance modifier while the associated dribble action still o
 ### Why
 
 Bounce Theory's dribble language moves too quickly for a stance-selection menu to feel natural. The stance controls should remain playable inside the rhythm. Returning through Medium keeps the plain-Space flow readable, while modified dribble inputs give direct stance access without creating a separate menu or pausing basketball action.
+
+
+---
+
+## Decision 005 — Prototype Possession Lifecycle Is Separate From Final Failure Rules
+
+**Status:** Active
+
+### Decision
+
+Bounce Theory will introduce a minimal prototype possession lifecycle before final menus or complete basketball failure rules exist:
+
+`Active → Ended → Restart → Active`
+
+A restart path is development infrastructure and should remain available independently of the final rules that eventually end a possession.
+
+For the current prototype, when the player attempts another dribble after the existing rhythmic continuation vocabulary no longer offers a reachable future contact target, the possession may transition to **Ended** instead of leaving the controller in a permanently unreachable/dead continuation state.
+
+This is a prototype resolution rule, not a locked final gather/mishandle/travel rule.
+
+### Why
+
+The current rhythm planner intentionally supports a finite interval vocabulary. After the latest supported continuation target has passed, repeatedly asking the same planner for another continuation can produce an unreachable target and leave playtesting in a state where the player cannot meaningfully continue.
+
+Separating the possession lifecycle from the final basketball-specific reason allows the prototype to recover cleanly now while leaving future systems free to reinterpret the same boundary as a gather, mishandle, steal, violation, finish, or another outcome.
+
+A lack of input by itself is **not** automatically possession failure because hesitation and intentional pauses remain valid design concepts.
