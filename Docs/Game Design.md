@@ -303,7 +303,7 @@ Ball height, bounce duration, hand height, floor height, contact hold time, came
 
 The game should prefer readable, expressive motion over rigid physical realism during prototyping.
 
-## 9. Stance
+## 8. Stance
 
 Bounce Theory uses three working stance states:
 
@@ -377,7 +377,7 @@ Exact timing windows are not locked. They must be tuned against:
 
 A future calibration option may be useful to compensate for individual/system latency.
 
-## 11. Defender Interaction
+## 10. Defender Interaction
 
 The defender is not just a collision obstacle.
 
