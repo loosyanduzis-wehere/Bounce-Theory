@@ -3,7 +3,7 @@
 **Status:** Active prototype  
 **Completed milestone:** Stance — prototype complete  
 **Next planned milestone:** Dribble State / Possession Foundation  
-**Current task:** `BT-DS-01 — Possession Lifecycle + Contextual Follow-Up Foundation`  
+**Current task:** `BT-DS-01 — Complete Prototype Dribble-State Milestone`  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
@@ -159,123 +159,178 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ## 5. Current Task — BT-DS-01
 
-**Title:** Possession Lifecycle + Contextual Follow-Up Foundation  
+**Title:** Complete Prototype Dribble-State Milestone  
 **Status:** IN PROGRESS
 
 ### Goal
 
-Create a minimal prototype possession lifecycle and restart path while formalizing the first contextual follow-up state needed for future branching.
+Finish the prototype dribble-state/state-machine layer before the first consolidated Codex review.
 
-The feature should turn the current expired-continuation dead loop into an explicit, recoverable possession end state without prematurely defining final gather, mishandle, steal, travel, or double-dribble rules.
+The completed milestone must represent the context promised by Phase 5 of the Source of Truth:
 
-### Unknowns Pass — Resolved For This Task
+`hand + ball phase + stance + timing + previous move + follow-up input`
 
-- The prototype needs an explicit higher-level possession state separate from ball-motion phase.
-- Restart behavior should exist now even though final possession-end causes remain open.
-- No-input time alone must **not** automatically end a possession because intentional hesitation/silence remains legal design space.
-- The current finite rhythm vocabulary tops out at the existing `2.0 beat` continuation target.
-- When the player **attempts another dribble** after no reachable target remains in that finite continuation vocabulary, the prototype should end the possession instead of repeatedly returning an unreachable target.
-- Previous resolved dribble action should become explicit contextual state for later move branching.
-- This task should not invent final move-specific combo legality.
+while retaining the already implemented possession/restart foundation and avoiding premature final combo, violation, defender, or scoring rules.
 
-### Desired Prototype Flow
+### Unknowns Pass — Resolved For This Milestone
 
-```text
-Possession Active
-    ↓
-dribble / follow-up play
-    ↓
-attempted continuation after latest reachable rhythm target
-    ↓
-Possession Ended
-    ↓
-temporary restart overlay / R
-    ↓
-clean Active possession
-```
+- Possession lifecycle is separate from ball-motion phase.
+- Restart is stable prototype infrastructure; final possession-end causes remain extensible.
+- Silence/inactivity alone does not end a possession.
+- Attempting continuation after the finite supported rhythm window has expired ends the prototype possession cleanly.
+- Previous **resolved** action context must be preserved independently from the newest judged/pending input.
+- A follow-up accepted during Descending/FloorContact should contextually follow the active action even before that action has visually returned.
+- Ball-control quality should be explicit for future defender logic:
+  - Perfect / Good → **Secure**
+  - Early / Late → **Recovering**
+  - Broken Rhythm → **Exposed**
+- Current follow-up legality remains grounded in existing physical rules: active hand, ball phase, reachability, one pending slot, and possession state.
+- Do not invent a fixed combo table or final stance-dependent follow-up restrictions merely to complete the milestone.
+- Previous action already matters mechanically through hand ownership; explicit follow-up relation/context is added so future systems can reason about the sequence without reconstructing it from animation.
+
+### State Model
+
+Keep separate dimensions instead of one giant enum:
+
+#### Possession
+
+- `Active`
+- `Ended`
+
+#### Ball motion phase
+
+- `Controlled`
+- `Descending`
+- `FloorContact`
+- `Returning`
+
+#### Ball-control quality
+
+- `Secure`
+- `Recovering`
+- `Exposed`
+
+#### Sequence context
+
+Preserve, at minimum:
+
+- whether a previous action has resolved,
+- previous resolved action,
+- previous resolved stance,
+- previous resolved timing judgment,
+- hand after the resolved action,
+- previous resolved control quality,
+- current sequence action count,
+- active follow-up relation,
+- pending follow-up relation.
+
+### Follow-Up Relation
+
+Classify accepted actions without imposing a fixed combo table:
+
+- `FirstAction`
+- `Repeat`
+- `SameHandVariation`
+- `Transfer`
+- `CounterTransfer`
+
+The relation is contextual/debuggable state for later defender, exposure, scoring, and legal-follow-up systems. It must be captured when the action is accepted and preserved if the action waits in the pending slot.
+
+### Existing BT-DS-01 Foundation To Preserve
+
+Already implemented on this branch:
+
+- explicit Active / Ended possession state,
+- prototype possession end reason,
+- R-key restart,
+- temporary restart overlay/button,
+- clean reset of ball/stance/pending/rhythm history,
+- expired finite-continuation attempt → Ended,
+- previous-action tracking,
+- initial BT-DS-01 validator.
 
 ### Scope
 
-#### Possession lifecycle
+#### Complete resolved-action context
 
-- Add explicit `Active` and `Ended` possession states.
-- Record a prototype possession-end reason.
-- Provide a public/scoped way for future systems to end a possession without owning restart implementation.
-- While Ended, gameplay dribble and stance input must not continue.
+When an action reaches floor contact, preserve its resolved:
 
-#### Restart
+- action,
+- stance,
+- timing judgment,
+- resulting hand,
+- ball-control quality.
 
-- Add **R** as a prototype restart shortcut.
-- Add a simple temporary on-screen **Restart** button/overlay when the possession is Ended.
-- Restart must restore a clean playable baseline:
-  - starting hand,
-  - Medium stance,
-  - cleared queued/pending action,
-  - cleared pending Space modifier state,
-  - normal ball/controller state,
-  - restarted rhythm clock / cleared ball-event history.
-- Restart should not move the player root, defender, or camera.
-- This is prototype tooling, not final menu/UI design.
+Increment sequence action count at resolution.
 
-#### Expired continuation handling
+#### Complete accepted follow-up context
 
-- Detect when an attempted dribble continuation no longer has a reachable target inside the currently supported finite rhythmic interval vocabulary.
-- Convert that attempted continuation into `PossessionState.Ended` with a clear prototype reason instead of repeatedly leaving the same continuation reference unreachable.
-- Do not automatically end merely because time passes with no input.
-- Initial input after a clean restart must remain valid even if the player waits before starting.
+At action acceptance:
 
-#### Contextual follow-up state
+- determine its immediate preceding action context,
+- classify the follow-up relation,
+- preserve that relation through pending/queued execution,
+- expose active and pending relation for debug/validation.
 
-- Track whether a previous dribble action has resolved.
-- Track the most recently resolved dribble action.
-- Reset previous-action context on possession restart.
-- Expose the contextual state for debug/validation and later branching.
-- Preserve existing hand, stance, ball phase, timing judgment, and pending-action semantics.
+#### Ball-control quality
 
-### Relevant Files / Systems
+- Map the accepted timing judgment into Secure / Recovering / Exposed.
+- Carry the active quality with the accepted action.
+- Preserve the resolved quality at floor contact.
+- Reset to Secure on possession restart.
+- Do not add steal behavior yet.
 
-Likely relevant:
+#### Decision/readability state
 
-- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
-- `Assets/BounceTheory/Scripts/RhythmClock.cs`
-- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
-- `Docs/DECISIONS.md`
-- `Docs/OPEN_QUESTIONS.md`
-- `Docs/IMPLEMENTATION_NOTES.md`
+Debug output should make the current state machine legible enough to verify:
+
+- possession,
+- motion phase,
+- hand,
+- stance,
+- active action,
+- active control quality,
+- previous resolved action/context,
+- active/pending follow-up relation,
+- sequence count.
 
 ### Success Criteria
 
-- [ ] Possession begins Active.
-- [ ] Existing valid dribble inputs behave as before while Active.
-- [ ] A resolved dribble records its action as previous-action context.
-- [ ] Waiting by itself does not end the possession.
-- [ ] An attempted continuation after the latest reachable supported rhythm target ends the possession cleanly.
-- [ ] The expired continuation does not remain in an endless unreachable retry loop.
-- [ ] Ended possession ignores normal dribble/stance input.
-- [ ] Pressing R restarts from Active or Ended state.
-- [ ] The temporary Restart UI works when Ended.
-- [ ] Restart restores starting hand and Medium stance.
-- [ ] Restart clears pending dribble and Space-modifier state.
-- [ ] Restart resets rhythm-clock ball-event history so a fresh first dribble is valid.
-- [ ] Restart clears previous-action context.
+- [ ] BT-DS-01 possession Ended/restart behavior remains intact.
+- [ ] Fresh first action is classified `FirstAction`.
+- [ ] Repeating the same action is classified `Repeat`.
+- [ ] A different same-hand action can classify `SameHandVariation`.
+- [ ] A hand-transferring action after a non-transfer context classifies `Transfer`.
+- [ ] A hand-transferring action following another transfer action classifies `CounterTransfer`.
+- [ ] A queued action preserves the relation it had when accepted.
+- [ ] Resolved action context does not get overwritten by a newer pending input before the current action resolves.
+- [ ] Perfect/Good actions expose Secure control quality.
+- [ ] Early/Late actions expose Recovering control quality.
+- [ ] Broken Rhythm exposes Exposed control quality.
+- [ ] Resolved control quality is preserved for future systems.
+- [ ] Sequence action count increments on floor contact and clears on restart.
+- [ ] Existing hand ownership rules remain correct.
+- [ ] Existing ball-phase immediate/queued behavior remains correct.
+- [ ] Existing stance-specific profiles remain correct.
+- [ ] Existing DSP/contact targets and rhythm judgments remain authoritative.
+- [ ] Restart clears sequence/follow-up/control context.
 - [ ] Player root, defender, and camera remain stationary.
-- [ ] Existing stance profiles, dribble ownership, DSP timing, and contact scheduling remain intact for valid in-window play.
 
 ### Out of Scope
 
-Do **not** implement during this task:
+Do **not** implement:
 
-- final pause/main menu,
-- polished UI,
-- automatic possession failure from generic inactivity,
-- final gather rules,
-- travel or double-dribble enforcement,
-- mishandle/loose-ball simulation,
-- defender steals,
-- move-specific legal/illegal combo tables,
-- stance-dependent follow-up restrictions,
+- fixed/canned combo sequences,
+- a full move-to-move legality table,
+- final stance-dependent follow-up advantages,
+- automatic gather from inactivity,
+- travel/double-dribble rules,
+- loose-ball physics,
+- defender reactions, steals, reach, lean, or recovery,
 - scoring,
 - finishes,
+- polished UI,
+- final animation,
 - unrelated refactors.
 
 ### Verification Plan
@@ -283,46 +338,33 @@ Do **not** implement during this task:
 Automated / executable:
 
 - [ ] Project compiles.
-- [ ] Add a targeted validator for possession Active → Ended → Restart → Active.
-- [ ] Verify waiting alone does not transition to Ended.
-- [ ] Verify a continuation attempt after the maximum supported target ends the possession.
-- [ ] Verify restart clears rhythm event history and allows a new first dribble.
-- [ ] Verify previous-action context records a resolved move and clears on restart.
-- [ ] Verify dribble and stance inputs are blocked while Ended.
+- [ ] Expand the dribble-state validator to cover possession lifecycle plus sequence/follow-up/control-quality context.
+- [ ] Validate each follow-up relation deterministically.
+- [ ] Validate queued relation capture.
+- [ ] Validate resolved context is not overwritten by a pending input.
+- [ ] Validate Secure / Recovering / Exposed timing mapping.
+- [ ] Validate restart clears all new context.
 - [ ] Run representative stance, pound, crossover, hesitation, behind-the-back, rhythm/contact regressions.
-- [ ] Review `git diff`.
+- [ ] Review final branch diff against `milestone/stance`.
 - [ ] Confirm unrelated files were not changed.
 
-User/manual:
+User/manual after Codex:
 
-- [ ] Let a normal dribble return, wait until the continuation window has clearly expired, then attempt another dribble.
-- [ ] Confirm a temporary possession-ended/restart overlay appears instead of leaving the prototype unable to continue.
-- [ ] Press R and confirm play immediately returns to a clean starting state.
-- [ ] Trigger the same flow and click the temporary Restart button.
-- [ ] Confirm normal quick follow-ups still work.
-- [ ] Confirm stance controls still behave as before.
+- [ ] Confirm normal quick chains still feel responsive.
+- [ ] Confirm the debug state follows the actual sequence being performed.
+- [ ] Confirm expired continuation produces the restart overlay.
+- [ ] Confirm R and the Restart button restore a clean possession.
+- [ ] Confirm stance behavior remains intact.
 
-After ChatGPT implementation is committed/pushed, hand this branch to Codex as a **fresh reviewer/fixer/verifier**. Codex should inspect the actual diff, compile, run the targeted validator/regressions, directly fix clear in-scope material issues, rerun verification, and report anything still requiring manual Play Mode testing.
+### Handoff Rule
+
+Do **not** send this branch to Codex until the full prototype dribble-state milestone above is implemented through GitHub.
+
+Then use **one consolidated Codex pass** as fresh reviewer/fixer/verifier across the entire `milestone/dribble-state` diff.
+
+Keep status `IN PROGRESS` until Codex has compiled, run the targeted validator/regressions, inspected the actual diff, and repaired any clear in-scope material issues. After successful Codex verification, move to `AWAITING PLAYTEST`.
 
 Do not mark COMPLETE until user/manual verification is accepted.
-
-### Implementation Handoff State
-
-ChatGPT/GitHub first implementation is committed on `milestone/dribble-state`.
-
-Implemented:
-
-- explicit Active / Ended possession state,
-- prototype end reason,
-- restart API,
-- R-key restart,
-- temporary Ended overlay with Restart button,
-- rhythm-clock query for whether the finite continuation vocabulary still has a reachable future target,
-- expired-continuation attempt → Ended instead of repeat-unreachable dead loop,
-- previous resolved action tracking,
-- targeted `BT-DS-01` Unity validator.
-
-GitHub-side review has been performed, but Unity compilation and executable validation have **not** been claimed by ChatGPT. Keep status `IN PROGRESS` until Codex performs the fresh-context compile/validator/review pass. After successful Codex verification, move to `AWAITING PLAYTEST`.
 
 ---
 
