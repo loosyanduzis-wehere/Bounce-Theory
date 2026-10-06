@@ -1416,16 +1416,18 @@ namespace BounceTheory.Editor
         {
             controller.RestartPossession();
 
-            StartAndCompleteSequenceAction(controller, clock, DribbleAction.Pound,
-                FollowUpRelation.FirstAction, errors);
-            StartAndCompleteSequenceAction(controller, clock, DribbleAction.Pound,
-                FollowUpRelation.Repeat, errors);
-            StartAndCompleteSequenceAction(controller, clock, DribbleAction.Hesitation,
-                FollowUpRelation.SameHandVariation, errors);
-            StartAndCompleteSequenceAction(controller, clock, DribbleAction.Crossover,
-                FollowUpRelation.Transfer, errors);
-            StartAndCompleteSequenceAction(controller, clock, DribbleAction.BehindTheBack,
-                FollowUpRelation.CounterTransfer, errors);
+            StartSequenceActionAndReachReturning(controller, clock, DribbleAction.Pound,
+                FollowUpRelation.FirstAction, true, errors);
+            StartSequenceActionAndReachReturning(controller, clock, DribbleAction.Pound,
+                FollowUpRelation.Repeat, false, errors);
+            StartSequenceActionAndReachReturning(controller, clock, DribbleAction.Hesitation,
+                FollowUpRelation.SameHandVariation, false, errors);
+            StartSequenceActionAndReachReturning(controller, clock, DribbleAction.Crossover,
+                FollowUpRelation.Transfer, false, errors);
+            StartSequenceActionAndReachReturning(controller, clock, DribbleAction.BehindTheBack,
+                FollowUpRelation.CounterTransfer, false, errors);
+
+            CompleteCurrentDribble(controller, errors);
 
             if (controller.SequenceActionCount != 5)
                 errors.Add($"Sequence action count expected 5 but was {controller.SequenceActionCount}.");
@@ -1479,8 +1481,10 @@ namespace BounceTheory.Editor
             for (int i = 0; i < 300 && controller.ActiveAction != DribbleAction.Hesitation; i++)
                 controller.Tick(1f / 240f);
 
-            if (controller.ActiveAction == DribbleAction.Hesitation &&
-                controller.ActiveFollowUpRelation != FollowUpRelation.SameHandVariation)
+            if (controller.ActiveAction != DribbleAction.Hesitation ||
+                controller.LogicalPhase != BallLogicalPhase.Descending)
+                errors.Add("Queued hesitation never executed after the pound reached floor contact.");
+            else if (controller.ActiveFollowUpRelation != FollowUpRelation.SameHandVariation)
                 errors.Add("Queued relation was recomputed instead of preserved when hesitation executed.");
 
             controller.RestartPossession();
@@ -1500,12 +1504,33 @@ namespace BounceTheory.Editor
                 errors.Add("BrokenRhythm must map to Exposed control quality.");
         }
 
-        private static void StartAndCompleteSequenceAction(PoundDribbleController controller, RhythmClock clock,
-            DribbleAction action, FollowUpRelation expectedRelation, ICollection<string> errors)
+        private static void StartSequenceActionAndReachReturning(PoundDribbleController controller,
+            RhythmClock clock, DribbleAction action, FollowUpRelation expectedRelation, bool firstAction,
+            ICollection<string> errors)
         {
-            double input = controller.SequenceActionCount == 0
-                ? FirstPerfectInputElapsed(clock, controller)
-                : NextPerfectContinuationElapsed(clock, controller);
+            double input;
+            if (firstAction)
+            {
+                input = FirstPerfectInputElapsed(clock, controller);
+            }
+            else
+            {
+                if (controller.LogicalPhase != BallLogicalPhase.Returning)
+                {
+                    errors.Add($"{action} sequence test expected Returning before follow-up input.");
+                    return;
+                }
+
+                const float returnOverlapSeconds = .12f;
+                controller.Tick(returnOverlapSeconds);
+                if (controller.LogicalPhase != BallLogicalPhase.Returning)
+                {
+                    errors.Add($"{action} sequence follow-up waited too long and left Returning.");
+                    return;
+                }
+                input = clock.ElapsedSecondsAtDspTime(controller.LastActualFloorContactDsp) +
+                        .08 + returnOverlapSeconds;
+            }
 
             if (!ProcessCurrentHandActionAtRhythmTime(controller, action, input))
             {
@@ -1517,17 +1542,22 @@ namespace BounceTheory.Editor
                 errors.Add($"{action} expected relation {expectedRelation} but got {controller.ActiveFollowUpRelation}.");
 
             int completedBefore = controller.CompletedDribbleCount;
-            for (int i = 0; i < 300 && controller.CompletedDribbleCount == completedBefore; i++)
-                controller.Tick(1f / 240f);
-            CompleteCurrentDribble(controller, errors);
+            for (int i = 0; i < 500 && controller.CompletedDribbleCount == completedBefore; i++)
+                controller.Tick(.005f);
+            if (controller.CompletedDribbleCount != completedBefore + 1)
+            {
+                errors.Add($"{action} did not reach floor contact during sequence validation.");
+                return;
+            }
+
+            for (int i = 0; i < 500 && controller.LogicalPhase != BallLogicalPhase.Returning; i++)
+                controller.Tick(.005f);
+            if (controller.LogicalPhase != BallLogicalPhase.Returning)
+                errors.Add($"{action} did not enter Returning after floor contact.");
         }
 
         private static double FirstPerfectInputElapsed(RhythmClock clock, PoundDribbleController controller) =>
             clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds;
-
-        private static double NextPerfectContinuationElapsed(RhythmClock clock, PoundDribbleController controller) =>
-            (clock.PreviousBallEventAlignedBeat + 1.0) * clock.SecondsPerBeat -
-            controller.ReferenceDescentDurationSeconds;
 
         private static bool ProcessCurrentHandActionAtRhythmTime(PoundDribbleController controller,
             DribbleAction action, double elapsed)
