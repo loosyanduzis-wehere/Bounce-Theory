@@ -23,6 +23,8 @@ Use these files for their specific roles:
 - `Docs/IMPLEMENTATION_STATUS.md` — current implementation state and the one active task.
 - `Docs/COMPLETED_TASKS.md` — concise completed implementation history.
 - `Docs/DECISIONS.md` — important architecture/design decisions and why they exist.
+- `Docs/OPEN_QUESTIONS.md` — recognized unresolved decisions; do not silently guess these.
+- `Docs/IMPLEMENTATION_NOTES.md` — current technical realities, workarounds, discoveries, and implementation-specific constraints.
 - `Docs/WORKFLOW.md` — project development and Git workflow.
 
 `ROADMAP.md` is planning context, **not an automatic implementation queue**.
@@ -46,6 +48,106 @@ Do not implement a roadmap item unless it has been promoted into the Current Tas
 - Stance changes may occur during an active dribble sequence.
 - Timing quality can affect control, sound, exposure, and defender steal opportunities.
 - Prototype tuning values are not permanent design decisions unless explicitly promoted into the Source of Truth.
+
+
+## Standard AI-Assisted Development Loop
+
+For meaningful feature, architecture, or unfamiliar-system work, follow:
+
+```text
+Goal
+  ↓
+Unknowns Pass
+  ↓
+targeted research / reference hunt
+  ↓
+decisions + OPEN_QUESTIONS
+  ↓
+implementation plan
+  ↓
+observable success criteria + verification plan
+  ↓
+ChatGPT implements one coherent feature-sized change through GitHub
+  ↓
+Git commit / branch / PR = handoff boundary
+  ↓
+fresh-context Codex review + build/test + scoped repair
+  ↓
+human/manual verification when required
+  ↓
+capture learnings in the correct project document
+  ↓
+next chunk
+```
+
+Do not start meaningful implementation before the Unknowns Pass and success/verification criteria are explicit.
+
+### Unknowns Pass
+
+Before implementing a meaningful change, deliberately surface:
+
+- assumptions being treated as facts,
+- unresolved design decisions,
+- hidden technical constraints,
+- interactions with existing systems,
+- edge cases and failure states,
+- hard-to-reverse choices,
+- platform/tooling/performance constraints,
+- information currently known only implicitly.
+
+Classify the result:
+
+- **Resolved decision:** record in the Source of Truth or `Docs/DECISIONS.md` when appropriate.
+- **Unresolved decision:** record in `Docs/OPEN_QUESTIONS.md`.
+- **Technical reality/workaround/discovery:** record in `Docs/IMPLEMENTATION_NOTES.md`.
+- **Temporary tuning:** keep as implementation tuning unless explicitly promoted.
+- **Irrelevant/temporary noise:** discard.
+
+Research only unknowns that materially affect the current decision. Prefer the actual repository, official documentation, concrete reference implementations, and primary sources over generic summaries.
+
+### Implementation Size Rule
+
+> Small enough to reason about; large enough to justify the context/setup cost.
+
+A coherent feature-sized change may touch multiple files when they all belong to one understandable behavior. Avoid artificial micro-tasks such as one task per enum, field, helper method, or trivial file edit.
+
+## AI Role Split
+
+For normal medium or large coding work:
+
+- **Main ChatGPT conversation:** context-rich architect and first implementer. Clarify the goal, run the Unknowns Pass, resolve or record open questions, define success criteria and verification, then author one coherent feature-sized change through GitHub.
+- **Git branch / commit / PR:** handoff boundary between implementation and independent review.
+- **Codex:** fresh-context reviewer, fixer, and verifier. Inspect the actual diff and relevant source of truth, build/compile, run the narrowest meaningful executable checks, find correctness/regression/architecture/edge-case problems, directly fix material issues that are clear and in scope, rerun verification, and report remaining manual checks.
+
+Do **not** use Codex as the primary implementer merely because code is involved.
+
+Use Codex as the primary implementer when the task materially benefits from:
+
+- local iterative build/test/debug loops while authoring,
+- broad mechanical repository changes,
+- migrations,
+- refactors whose correctness depends on repeated executable feedback,
+- or capabilities the GitHub-authoring path cannot safely verify.
+
+Prefer one consolidated Codex review per coherent feature-sized change rather than repeated reviews after tiny edits.
+
+## Codex Review / Fixer Mode
+
+When reviewing a ChatGPT/GitHub implementation, Codex should treat it as untrusted until verified.
+
+Codex should:
+
+1. Read the objective, success criteria, relevant project instructions, Source of Truth, and any relevant open questions/implementation notes.
+2. Inspect the actual Git diff and surrounding code rather than trusting the implementation summary.
+3. Build or compile when possible.
+4. Run the narrowest meaningful automated tests, Unity validators, or executable checks.
+5. Look specifically for correctness issues, regressions, architecture violations, hidden coupling, edge cases, and missing verification.
+6. Fix material problems directly when the correction is clear, safe, and within scope.
+7. Rerun relevant verification after any fixes.
+8. Review final `git status` and diff for unrelated changes.
+9. Report the final verdict, issues found/fixed, verification evidence, files changed during review, remaining uncertainty, and manual tests still required.
+
+Do not create stylistic churn, broad refactors, or unrelated cleanup merely because another implementation style is possible.
 
 ## Current Design Principles
 
@@ -171,4 +273,4 @@ If an unrelated issue is discovered:
 - Mention it briefly as a follow-up.
 - Keep the current task focused.
 
-Codex should implement decided work, not silently redesign Bounce Theory.
+Codex should review, verify, and repair decided work by default rather than silently redesign Bounce Theory. Use Codex as primary implementer only under the exceptions defined in **AI Role Split**.
