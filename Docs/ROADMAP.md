@@ -28,7 +28,7 @@ Key completed task:
 
 ## Milestone 2 — Ball Control Language
 
-**Status:** CORE VOCABULARY COMPLETE
+**Status:** IN PROGRESS — CORE VOCABULARY COMPLETE; DRIBBLE STATE AWAITING VERIFICATION
 
 Completed:
 
@@ -53,7 +53,7 @@ Deferred until interacting systems exist:
 - Final gather / mishandle / violation semantics.
 - Final continuation/grace tuning by difficulty.
 
-Do not implement all of these as one task. Promote one small task at a time into `IMPLEMENTATION_STATUS.md`.
+Deferred items are not an automatic queue. Promote the next coherent feature-sized chunk into `IMPLEMENTATION_STATUS.md` only when it is actually selected.
 
 ---
 
