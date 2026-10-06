@@ -1271,6 +1271,117 @@ namespace BounceTheory.Editor
             }
         }
 
+        [MenuItem("Bounce Theory/Validate BT-DS-01 Possession Lifecycle")]
+        public static void ValidatePossessionLifecycle()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var errors = new List<string>();
+            GameObject offense = Required("OffensivePlayer", errors);
+            GameObject defender = Required("Defender", errors);
+            GameObject ball = Required("Basketball", errors);
+            GameObject cameraObject = Required("Main Camera", errors);
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            PrototypeStanceVisual visual = offense ? offense.GetComponent<PrototypeStanceVisual>() : null;
+            Transform leftAnchor = offense ? offense.transform.Find("LeftHandBallAnchor") : null;
+            Transform rightAnchor = offense ? offense.transform.Find("RightHandBallAnchor") : null;
+
+            if (!clock) errors.Add("Reusable RhythmClock is missing.");
+            if (!controller) errors.Add("PoundDribbleController is missing.");
+            if (!visual) errors.Add("PrototypeStanceVisual is missing.");
+            if (!leftAnchor || !rightAnchor) errors.Add("Ball hand anchors are missing.");
+
+            if (controller && clock && visual && leftAnchor && rightAnchor && offense && defender && cameraObject)
+            {
+                Vector3 offensePosition = offense.transform.position;
+                Vector3 defenderPosition = defender.transform.position;
+                Vector3 cameraPosition = cameraObject.transform.position;
+                Quaternion cameraRotation = cameraObject.transform.rotation;
+
+                controller.RestartPossession();
+                if (controller.CurrentPossessionState != PossessionState.Active)
+                    errors.Add("Restart did not begin an Active possession.");
+                if (controller.CurrentPossessionEndReason != PossessionEndReason.None)
+                    errors.Add("Restart did not clear the possession end reason.");
+                if (controller.CurrentStance != PlayerStance.Medium)
+                    errors.Add("Restart did not restore Medium stance.");
+                if (controller.HasPreviousAction)
+                    errors.Add("Restart did not clear previous-action context.");
+                if (clock.HasPreviousBallEvent)
+                    errors.Add("Restart did not clear rhythm ball-event history.");
+
+                double firstInput = clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds;
+                int completedBefore = controller.CompletedDribbleCount;
+                if (!controller.ProcessInputAtRhythmTime(true, false, firstInput))
+                    errors.Add("Fresh first dribble was not accepted after restart.");
+                for (int i = 0; i < 300 && controller.CompletedDribbleCount == completedBefore; i++)
+                    controller.Tick(1f / 240f);
+                CompleteCurrentDribble(controller, errors);
+
+                if (!controller.HasPreviousAction || controller.PreviousAction != DribbleAction.Pound)
+                    errors.Add("Resolved pound was not recorded as previous-action context.");
+                if (!clock.HasPreviousBallEvent)
+                    errors.Add("Resolved pound did not establish rhythm continuation history.");
+                if (controller.CurrentPossessionState != PossessionState.Active)
+                    errors.Add("Normal resolved dribble unexpectedly ended the possession.");
+
+                double latestTargetElapsed =
+                    (clock.PreviousBallEventAlignedBeat + RhythmicIntervalCatalog.MaximumBeats) * clock.SecondsPerBeat;
+                double expiredAttempt = latestTargetElapsed + controller.MinimumReadableContactApproachTime + .01;
+
+                if (controller.CurrentPossessionState != PossessionState.Active)
+                    errors.Add("Waiting without input changed possession state.");
+
+                if (controller.ProcessInputAtRhythmTime(true, false, expiredAttempt))
+                    errors.Add("Expired continuation attempt was accepted instead of ending the possession.");
+                if (controller.CurrentPossessionState != PossessionState.Ended)
+                    errors.Add("Expired continuation attempt did not end the possession.");
+                if (controller.CurrentPossessionEndReason != PossessionEndReason.ContinuationWindowExpired)
+                    errors.Add("Expired continuation did not report ContinuationWindowExpired.");
+
+                if (controller.ProcessCrossoverInputAtRhythmTime(true, false, expiredAttempt + .1))
+                    errors.Add("Ended possession accepted a normal dribble input.");
+
+                controller.RestartPossession();
+                if (controller.CurrentPossessionState != PossessionState.Active ||
+                    controller.CurrentPossessionEndReason != PossessionEndReason.None)
+                    errors.Add("Restart did not restore Active/None possession state.");
+                if (controller.CurrentHand != controller.StartingHand)
+                    errors.Add("Restart did not restore the starting hand.");
+                if (controller.CurrentStance != PlayerStance.Medium)
+                    errors.Add("Restart did not restore Medium stance.");
+                if (controller.HasPendingInput || controller.HasPendingPlainSpace)
+                    errors.Add("Restart did not clear pending dribble/Space state.");
+                if (controller.HasPreviousAction)
+                    errors.Add("Restart did not clear previous-action context.");
+                if (clock.HasPreviousBallEvent)
+                    errors.Add("Restart did not reset the rhythm event history.");
+
+                double freshInput = clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds;
+                if (!controller.ProcessInputAtRhythmTime(true, false, freshInput))
+                    errors.Add("A new first dribble was not accepted after possession restart.");
+                CompleteCurrentDribble(controller, errors);
+
+                ValidateStanceCycleAndVisuals(controller, visual, errors);
+                ValidateCrossoverCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateHesitationCycle(controller, clock, BallHand.Right, rightAnchor, errors);
+                ValidateBehindBackCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateTargetContactScheduling(controller, clock, errors);
+
+                AssertStill("OffensivePlayer", offensePosition, offense.transform.position, errors);
+                AssertStill("Defender", defenderPosition, defender.transform.position, errors);
+                AssertStill("Main Camera", cameraPosition, cameraObject.transform.position, errors);
+                if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                    errors.Add("Main Camera rotation changed during possession validation.");
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException("BT-DS-01 validation failed:\n- " + string.Join("\n- ", errors));
+
+            Debug.Log("BT-DS-01 validation passed: Active possession records previous-action context; waiting alone does not end play; an attempted continuation beyond the finite rhythm window transitions to Ended; Ended blocks dribble input; restart restores starting hand, Medium stance, transient input state, and fresh rhythm history; representative stance/dribble/contact regressions pass.");
+        }
+
         public static void CapturePreview()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
