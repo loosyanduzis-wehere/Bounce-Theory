@@ -19,6 +19,8 @@ namespace BounceTheory
             RhythmicIntervalKind.TwoBeats
         };
 
+        public static double MaximumBeats => Beats(Ordered[Ordered.Length - 1]);
+
         public static double Beats(RhythmicIntervalKind interval)
         {
             switch (interval)
@@ -203,6 +205,22 @@ namespace BounceTheory
             hasPreviousBallEvent = false;
             previousBallEventElapsedSeconds = 0;
             previousBallEventAlignedBeat = 0;
+        }
+
+        public bool HasAvailableContinuationTargetAtElapsedTime(double inputElapsedSeconds,
+            double minimumApproachSeconds, double referenceContactBeatOverride = double.NaN)
+        {
+            inputElapsedSeconds = Math.Max(0, inputElapsedSeconds);
+            minimumApproachSeconds = Math.Max(.01, minimumApproachSeconds);
+
+            bool hasReference = !double.IsNaN(referenceContactBeatOverride) || hasPreviousBallEvent;
+            if (!hasReference) return true;
+
+            double referenceBeat = !double.IsNaN(referenceContactBeatOverride)
+                ? referenceContactBeatOverride
+                : previousBallEventAlignedBeat;
+            double latestTargetElapsed = (referenceBeat + RhythmicIntervalCatalog.MaximumBeats) * SecondsPerBeat;
+            return latestTargetElapsed - inputElapsedSeconds + 1e-9 >= minimumApproachSeconds;
         }
 
         public double DspTimeForBeat(double beatPosition) => startDspTime + beatPosition * SecondsPerBeat;
