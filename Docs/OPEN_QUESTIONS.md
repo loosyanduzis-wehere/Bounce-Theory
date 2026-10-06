@@ -13,7 +13,8 @@
 - **Stance-dependent follow-ups:** define which follow-up actions become more or less favorable or physically legal from each stance.
 - **Space + Behind-the-back:** no stance destination is assigned. Leave unassigned until it has a clear gameplay purpose.
 - **Continuation / grace after a bounce:** decide how much late continuation forgiveness Easy mode should provide after control returns without weakening rhythm scoring.
-- **Bounce resolution:** exact rules for gather, mishandle, exposed ball, travel, double-dribble, and legal intentional pauses remain unresolved.
+- **Bounce resolution:** exact final rules for gather, mishandle, exposed ball, travel, double-dribble, and legal intentional pauses remain unresolved. The prototype may end a possession when a new dribble is attempted after the current finite rhythmic continuation window is exhausted; this is a testing rule, not the final basketball interpretation.
+- **Possession-end causes:** beyond the provisional expired-continuation case, decide which future events end a possession (steal, mishandle, gather, violation, made/missed finish, etc.) and which merely change state.
 - **Defender model:** exact defender state transitions, reaction rules, and AI logic remain open for the defender prototype milestone.
 
 ## Rhythm / Tuning Questions
