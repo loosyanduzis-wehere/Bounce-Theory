@@ -218,4 +218,23 @@ Do not over-tune the numeric pound-height values yet. Final perceptual differenc
 
 ---
 
+## BT-ST-03 — Complete Prototype Stance Behavior Pass
+
+**Completed:** 2026-10-06  
+**Milestone:** Stance
+
+### Result
+
+Low, Medium, and High now produce distinct prototype behavior across Pound, Crossover, Hesitation, and Behind-the-back while preserving the shared rhythm/contact architecture.
+
+Medium remains the neutral baseline; stance is captured at action acceptance; queued actions preserve accepted stance; later stance changes do not rewrite active-action timing/profile; Space + Behind-the-back remains intentionally unassigned.
+
+### Verification
+
+Automated stance/dribble validation passed before handoff, and user Play Mode verification was accepted on **2026-10-06**.
+
+Exact stance tuning and the `0.18 s` modifier grace remain provisional for later animation/input-feel work.
+
+---
+
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
