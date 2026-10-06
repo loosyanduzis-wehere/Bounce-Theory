@@ -2,16 +2,16 @@
 
 **Status:** Active prototype  
 **Completed milestone:** Ball Control Language — core vocabulary  
-**Next planned milestone:** Stance  
-**Current task:** `BT-ST-03 — Complete Prototype Stance Behavior Pass`  
+**Next planned milestone:** Dribble State / Possession Foundation  
+**Current task:** `BT-DS-01 — Possession Lifecycle + Contextual Follow-Up Foundation`  
 **Git repository:** Configured  
 **Remote:** `https://github.com/loosyanduzis-wehere/Bounce-Theory.git`  
 **Baseline commit:** `078def9` — prototype through legacy Chunk 4.75  
-**Current branch at handoff:** `milestone/stance`  
+**Current branch at handoff:** `milestone/dribble-state`  
 **Project path:** `C:\Users\jerry\Bounce Theory v2`  
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
-**Last updated:** 2026-10-05
+**Last updated:** 2026-10-06
 
 > This file is the current implementation handoff for Codex.
 > It describes what exists now and the one task Codex is allowed to work on next.
@@ -157,137 +157,154 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 
 ---
 
-## 5. Current Task — BT-ST-03
+## 5. Current Task — BT-DS-01
 
-**Title:** Complete Prototype Stance Behavior Pass  
-**Status:** AWAITING PLAYTEST
+**Title:** Possession Lifecycle + Contextual Follow-Up Foundation  
+**Status:** IN PROGRESS
 
 ### Goal
 
-Extend the existing stance system so Low, Medium, and High produce clearly different **prototype expressions across the current dribble vocabulary**, while preserving the existing rhythm/contact architecture and keeping all stance tuning reversible.
+Create a minimal prototype possession lifecycle and restart path while formalizing the first contextual follow-up state needed for future branching.
 
-This is intentionally a larger Codex task than the previous stance chunks so related stance behavior can be implemented and verified together.
+The feature should turn the current expired-continuation dead loop into an explicit, recoverable possession end state without prematurely defining final gather, mishandle, steal, travel, or double-dribble rules.
 
-### Working Stance Identity
+### Unknowns Pass — Resolved For This Task
 
-Use the following prototype identity consistently:
+- The prototype needs an explicit higher-level possession state separate from ball-motion phase.
+- Restart behavior should exist now even though final possession-end causes remain open.
+- No-input time alone must **not** automatically end a possession because intentional hesitation/silence remains legal design space.
+- The current finite rhythm vocabulary tops out at the existing `2.0 beat` continuation target.
+- When the player **attempts another dribble** after no reachable target remains in that finite continuation vocabulary, the prototype should end the possession instead of repeatedly returning an unreachable target.
+- Previous resolved dribble action should become explicit contextual state for later move branching.
+- This task should not invent final move-specific combo legality.
 
-- **Low:** compact, lower, tighter basketball expression.
-- **Medium:** current neutral/baseline behavior.
-- **High:** elevated, more upright/open basketball expression.
+### Desired Prototype Flow
 
-These are prototype presentation/gameplay profiles, not locked final animation values.
-
-### Existing Behavior To Preserve
-
-Already implemented and accepted:
-
-- Low / Medium / High stance state.
-- Medium default stance.
-- Plain Space stance flow.
-- Space + Crossover → Low.
-- Space + Pound → Medium.
-- Space + Hesitation → High.
-- Space + Behind-the-back remains unassigned.
-- 0.18-second stance-modifier grace window.
-- Prototype Low / Medium / High player silhouettes.
-- Pound dribble captures stance at acceptance and uses Low / Medium / High vertical profiles.
-- Medium pound remains the original baseline.
+```text
+Possession Active
+    ↓
+dribble / follow-up play
+    ↓
+attempted continuation after latest reachable rhythm target
+    ↓
+Possession Ended
+    ↓
+temporary restart overlay / R
+    ↓
+clean Active possession
+```
 
 ### Scope
 
-Extend stance-dependent move expression to the remaining existing dribble actions:
+#### Possession lifecycle
 
-#### Crossover
+- Add explicit `Active` and `Ended` possession states.
+- Record a prototype possession-end reason.
+- Provide a public/scoped way for future systems to end a possession without owning restart implementation.
+- While Ended, gameplay dribble and stance input must not continue.
 
-- Capture the accepted stance when the crossover is accepted.
-- Preserve Medium crossover as the current baseline.
-- Give Low and High distinct tunable prototype trajectory/readability profiles consistent with the working stance identity.
-- Preserve hand transfer, floor-contact target, DSP input timestamp, and rhythm judgment.
+#### Restart
 
-#### Hesitation
+- Add **R** as a prototype restart shortcut.
+- Add a simple temporary on-screen **Restart** button/overlay when the possession is Ended.
+- Restart must restore a clean playable baseline:
+  - starting hand,
+  - Medium stance,
+  - cleared queued/pending action,
+  - cleared pending Space modifier state,
+  - normal ball/controller state,
+  - restarted rhythm clock / cleared ball-event history.
+- Restart should not move the player root, defender, or camera.
+- This is prototype tooling, not final menu/UI design.
 
-- Capture the accepted stance when hesitation is accepted.
-- Preserve Medium hesitation as the current baseline.
-- Give Low and High distinct tunable prototype hold/lift/body-readability behavior consistent with the working stance identity.
-- Preserve same-hand ownership, floor-contact target, DSP input timestamp, and rhythm judgment.
+#### Expired continuation handling
 
-#### Behind-the-Back
+- Detect when an attempted dribble continuation no longer has a reachable target inside the currently supported finite rhythmic interval vocabulary.
+- Convert that attempted continuation into `PossessionState.Ended` with a clear prototype reason instead of repeatedly leaving the same continuation reference unreachable.
+- Do not automatically end merely because time passes with no input.
+- Initial input after a clean restart must remain valid even if the player waits before starting.
 
-- Capture the accepted stance when behind-the-back is accepted.
-- Preserve Medium behind-the-back as the current baseline.
-- Give Low and High distinct tunable prototype depth/height/wrap readability consistent with the working stance identity.
-- Do **not** assign a special Space + Behind-the-back stance destination.
-- Preserve hand transfer, floor-contact target, DSP input timestamp, and rhythm judgment.
+#### Contextual follow-up state
 
-### Architecture Requirements
+- Track whether a previous dribble action has resolved.
+- Track the most recently resolved dribble action.
+- Reset previous-action context on possession restart.
+- Expose the contextual state for debug/validation and later branching.
+- Preserve existing hand, stance, ball phase, timing judgment, and pending-action semantics.
 
-- Capture stance at **action acceptance**, not continuously during visual motion.
-- Changing stance after an action is accepted must not retroactively rewrite that active action's accepted stance profile.
-- Queued/pending actions must preserve the stance profile they were accepted with.
-- Gameplay/rhythm state remains authoritative over animation completion.
-- Do not create separate clocks or timing systems per stance.
-- Prefer tunable serialized prototype values rather than hard-coded final-feel constants.
-- Keep Medium behavior equal to the existing pre-stance baseline wherever practical.
+### Relevant Files / Systems
 
-### Acceptance Criteria
+Likely relevant:
 
-- [ ] Low / Medium / High produce visibly/readably different crossover profiles.
-- [ ] Low / Medium / High produce visibly/readably different hesitation profiles.
-- [ ] Low / Medium / High produce visibly/readably different behind-the-back profiles.
-- [ ] Medium remains the current baseline for all three actions.
-- [ ] Pound stance behavior from BT-ST-02 remains intact.
-- [ ] Each action captures stance at acceptance and retains it if stance changes later.
-- [ ] Pending actions retain the stance they were accepted with.
-- [ ] Equivalent inputs across stances preserve the same DSP timestamp, rhythm judgment, and target contact time.
-- [ ] Hand ownership rules remain correct.
-- [ ] Plain Space and direct stance modifiers remain intact.
-- [ ] Space + Behind-the-back remains unassigned.
+- `Assets/BounceTheory/Scripts/PoundDribbleController.cs`
+- `Assets/BounceTheory/Scripts/RhythmClock.cs`
+- `Assets/BounceTheory/Editor/BounceTheorySceneBuilder.cs`
+- `Docs/DECISIONS.md`
+- `Docs/OPEN_QUESTIONS.md`
+- `Docs/IMPLEMENTATION_NOTES.md`
+
+### Success Criteria
+
+- [ ] Possession begins Active.
+- [ ] Existing valid dribble inputs behave as before while Active.
+- [ ] A resolved dribble records its action as previous-action context.
+- [ ] Waiting by itself does not end the possession.
+- [ ] An attempted continuation after the latest reachable supported rhythm target ends the possession cleanly.
+- [ ] The expired continuation does not remain in an endless unreachable retry loop.
+- [ ] Ended possession ignores normal dribble/stance input.
+- [ ] Pressing R restarts from Active or Ended state.
+- [ ] The temporary Restart UI works when Ended.
+- [ ] Restart restores starting hand and Medium stance.
+- [ ] Restart clears pending dribble and Space-modifier state.
+- [ ] Restart resets rhythm-clock ball-event history so a fresh first dribble is valid.
+- [ ] Restart clears previous-action context.
 - [ ] Player root, defender, and camera remain stationary.
-- [ ] Project compiles with no new errors.
+- [ ] Existing stance profiles, dribble ownership, DSP timing, and contact scheduling remain intact for valid in-window play.
 
 ### Out of Scope
 
 Do **not** implement during this task:
 
-- stance-dependent rhythm intervals,
-- stance-dependent timing windows,
-- ball exposure,
-- legal/illegal follow-up restrictions,
-- defender reaction,
-- defender AI,
-- steal opportunities,
-- shots, drives, or finishes,
-- final animation assets,
-- conventional locomotion,
+- final pause/main menu,
+- polished UI,
+- automatic possession failure from generic inactivity,
+- final gather rules,
+- travel or double-dribble enforcement,
+- mishandle/loose-ball simulation,
+- defender steals,
+- move-specific legal/illegal combo tables,
+- stance-dependent follow-up restrictions,
+- scoring,
+- finishes,
 - unrelated refactors.
 
-### Verification Required
+### Verification Plan
 
-Automated:
+Automated / executable:
 
 - [ ] Project compiles.
-- [ ] Add targeted stance-profile validation for crossover, hesitation, and behind-the-back.
-- [ ] Verify Medium retains the current baseline behavior for each move.
-- [ ] Verify stance capture survives later stance changes.
-- [ ] Verify queued actions preserve their accepted stance profile.
-- [ ] Verify equivalent inputs keep the same DSP timestamp, rhythm judgment, and target floor-contact time across stance profiles.
-- [ ] Run representative pound, rhythm/contact, and stance-control regressions.
+- [ ] Add a targeted validator for possession Active → Ended → Restart → Active.
+- [ ] Verify waiting alone does not transition to Ended.
+- [ ] Verify a continuation attempt after the maximum supported target ends the possession.
+- [ ] Verify restart clears rhythm event history and allows a new first dribble.
+- [ ] Verify previous-action context records a resolved move and clears on restart.
+- [ ] Verify dribble and stance inputs are blocked while Ended.
+- [ ] Run representative stance, pound, crossover, hesitation, behind-the-back, rhythm/contact regressions.
 - [ ] Review `git diff`.
 - [ ] Confirm unrelated files were not changed.
 
 User/manual:
 
-- [ ] Compare crossover in Low / Medium / High.
-- [ ] Compare hesitation in Low / Medium / High.
-- [ ] Compare behind-the-back in Low / Medium / High.
-- [ ] Confirm Medium still feels like the existing baseline.
-- [ ] Confirm stance differences are readable even if final tuning remains provisional until animation.
-- [ ] Confirm all stance controls and pound behavior still work.
+- [ ] Let a normal dribble return, wait until the continuation window has clearly expired, then attempt another dribble.
+- [ ] Confirm a temporary possession-ended/restart overlay appears instead of leaving the prototype unable to continue.
+- [ ] Press R and confirm play immediately returns to a clean starting state.
+- [ ] Trigger the same flow and click the temporary Restart button.
+- [ ] Confirm normal quick follow-ups still work.
+- [ ] Confirm stance controls still behave as before.
 
-After automated verification, set this task to `AWAITING PLAYTEST`, commit/push `milestone/stance`, and stop for user verification.
+After ChatGPT implementation is committed/pushed, hand this branch to Codex as a **fresh reviewer/fixer/verifier**. Codex should inspect the actual diff, compile, run the targeted validator/regressions, directly fix clear in-scope material issues, rerun verification, and report anything still requiring manual Play Mode testing.
 
-Do not mark COMPLETE until the user accepts the Play Mode behavior.
+Do not mark COMPLETE until user/manual verification is accepted.
 
 ---
 
