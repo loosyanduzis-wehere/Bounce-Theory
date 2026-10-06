@@ -182,6 +182,7 @@ namespace BounceTheory
         public RhythmClock RhythmClock => rhythmClock;
         public TimingJudgment LastTimingJudgment => lastTimingJudgment;
         public float ActiveBounceDuration => activeBounceDuration;
+        public float ActiveContactHold => activeContactHold;
         public float BounceVolume => bounceVolume;
         public float MinimumFastBounceHeight => minimumFastBounceHeight;
         public float MaximumDescentSpeed => maximumDescentSpeed;
