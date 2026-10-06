@@ -306,6 +306,24 @@ After ChatGPT implementation is committed/pushed, hand this branch to Codex as a
 
 Do not mark COMPLETE until user/manual verification is accepted.
 
+### Implementation Handoff State
+
+ChatGPT/GitHub first implementation is committed on `milestone/dribble-state`.
+
+Implemented:
+
+- explicit Active / Ended possession state,
+- prototype end reason,
+- restart API,
+- R-key restart,
+- temporary Ended overlay with Restart button,
+- rhythm-clock query for whether the finite continuation vocabulary still has a reachable future target,
+- expired-continuation attempt → Ended instead of repeat-unreachable dead loop,
+- previous resolved action tracking,
+- targeted `BT-DS-01` Unity validator.
+
+GitHub-side review has been performed, but Unity compilation and executable validation have **not** been claimed by ChatGPT. Keep status `IN PROGRESS` until Codex performs the fresh-context compile/validator/review pass. After successful Codex verification, move to `AWAITING PLAYTEST`.
+
 ---
 
 ## 6. Current Task Template
