@@ -9,6 +9,8 @@ namespace BounceTheory
     public enum BounceMotionMode { Normal, Compressed, Unreachable }
     public enum DribbleAction { Pound, Crossover, Hesitation, BehindTheBack }
     public enum PlayerStance { Low, Medium, High }
+    public enum PossessionState { Active, Ended }
+    public enum PossessionEndReason { None, ContinuationWindowExpired, Manual }
 
     /// <summary>Rhythm input is authoritative; one judged follow-up may wait for Controlled.</summary>
     public sealed class PoundDribbleController : MonoBehaviour
@@ -132,6 +134,10 @@ namespace BounceTheory
         private double lastActualFloorContactDsp;
         private double lastContactErrorMilliseconds;
         private string lastInputDecision = "Waiting for input.";
+        private PossessionState possessionState = PossessionState.Active;
+        private PossessionEndReason possessionEndReason = PossessionEndReason.None;
+        private bool hasPreviousAction;
+        private DribbleAction previousAction = DribbleAction.Pound;
         private bool spaceModifierConsumed;
         private bool pendingPlainSpace;
         private float pendingPlainSpaceDeadline;
@@ -198,6 +204,10 @@ namespace BounceTheory
         public float HighBehindBackDepthAddition => highBehindBackDepthAddition;
         public float HighBehindBackWrapAddition => highBehindBackWrapAddition;
         public float HighBehindBackArcLift => highBehindBackArcLift;
+        public PossessionState CurrentPossessionState => possessionState;
+        public PossessionEndReason CurrentPossessionEndReason => possessionEndReason;
+        public bool HasPreviousAction => hasPreviousAction;
+        public DribbleAction PreviousAction => previousAction;
 
         public event Action<BallHand> DribbleStarted;
         public event Action<BallHand> FloorContactReached;
@@ -259,6 +269,15 @@ namespace BounceTheory
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null)
             {
+                if (keyboard.rKey.wasPressedThisFrame)
+                {
+                    RestartPossession();
+                    return;
+                }
+
+                if (possessionState == PossessionState.Ended)
+                    return;
+
                 bool leftPoundPressed = keyboard.wKey.wasPressedThisFrame;
                 bool rightPoundPressed = keyboard.upArrowKey.wasPressedThisFrame;
                 bool leftCrossoverPressed = keyboard.dKey.wasPressedThisFrame;
@@ -342,7 +361,7 @@ namespace BounceTheory
             if (!TryIdentifyActiveInput(leftPressed, rightPressed)) return false;
             double dsp = AudioSettings.dspTime;
             double elapsed = rhythmClock != null ? rhythmClock.ElapsedSecondsAtDspTime(dsp) : 0;
-            ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, false);
+            if (!TryCreateContactPlan(elapsed, dsp, false, out ContactTimingPlan plan)) return false;
             return DecideInput(DribbleAction.Pound, plan, false, acceptedPoundStance);
         }
 
@@ -351,7 +370,7 @@ namespace BounceTheory
             if (!TryIdentifyActiveInput(leftPressed, rightPressed)) return false;
             double dsp = rhythmClock != null ? rhythmClock.StartDspTime + elapsed : elapsed;
             simulatedElapsedCursor = Math.Max(simulatedElapsedCursor, elapsed);
-            ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, true);
+            if (!TryCreateContactPlan(elapsed, dsp, true, out ContactTimingPlan plan)) return false;
             return DecideInput(DribbleAction.Pound, plan, true, currentStance);
         }
 
@@ -368,7 +387,7 @@ namespace BounceTheory
             if (!TryIdentifyActiveInput(leftToRightPressed, rightToLeftPressed)) return false;
             double dsp = AudioSettings.dspTime;
             double elapsed = rhythmClock != null ? rhythmClock.ElapsedSecondsAtDspTime(dsp) : 0;
-            ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, false);
+            if (!TryCreateContactPlan(elapsed, dsp, false, out ContactTimingPlan plan)) return false;
             return DecideInput(DribbleAction.Crossover, plan, false, acceptedStance);
         }
 
@@ -377,7 +396,7 @@ namespace BounceTheory
             if (!TryIdentifyActiveInput(leftToRightPressed, rightToLeftPressed)) return false;
             double dsp = rhythmClock != null ? rhythmClock.StartDspTime + elapsed : elapsed;
             simulatedElapsedCursor = Math.Max(simulatedElapsedCursor, elapsed);
-            ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, true);
+            if (!TryCreateContactPlan(elapsed, dsp, true, out ContactTimingPlan plan)) return false;
             return DecideInput(DribbleAction.Crossover, plan, true, currentStance);
         }
 
@@ -395,7 +414,7 @@ namespace BounceTheory
             if (!TryIdentifyActiveInput(leftPressed, rightPressed)) return false;
             double dsp = AudioSettings.dspTime;
             double elapsed = rhythmClock != null ? rhythmClock.ElapsedSecondsAtDspTime(dsp) : 0;
-            ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, false);
+            if (!TryCreateContactPlan(elapsed, dsp, false, out ContactTimingPlan plan)) return false;
             return DecideInput(DribbleAction.Hesitation, plan, false, acceptedStance);
         }
 
@@ -404,7 +423,7 @@ namespace BounceTheory
             if (!TryIdentifyActiveInput(leftPressed, rightPressed)) return false;
             double dsp = rhythmClock != null ? rhythmClock.StartDspTime + elapsed : elapsed;
             simulatedElapsedCursor = Math.Max(simulatedElapsedCursor, elapsed);
-            ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, true);
+            if (!TryCreateContactPlan(elapsed, dsp, true, out ContactTimingPlan plan)) return false;
             return DecideInput(DribbleAction.Hesitation, plan, true, currentStance);
         }
 
@@ -417,7 +436,7 @@ namespace BounceTheory
             if (!TryIdentifyActiveInput(leftToRightPressed, rightToLeftPressed)) return false;
             double dsp = AudioSettings.dspTime;
             double elapsed = rhythmClock != null ? rhythmClock.ElapsedSecondsAtDspTime(dsp) : 0;
-            ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, false);
+            if (!TryCreateContactPlan(elapsed, dsp, false, out ContactTimingPlan plan)) return false;
             return DecideInput(DribbleAction.BehindTheBack, plan, false, currentStance);
         }
 
@@ -426,7 +445,7 @@ namespace BounceTheory
             if (!TryIdentifyActiveInput(leftToRightPressed, rightToLeftPressed)) return false;
             double dsp = rhythmClock != null ? rhythmClock.StartDspTime + elapsed : elapsed;
             simulatedElapsedCursor = Math.Max(simulatedElapsedCursor, elapsed);
-            ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, true);
+            if (!TryCreateContactPlan(elapsed, dsp, true, out ContactTimingPlan plan)) return false;
             return DecideInput(DribbleAction.BehindTheBack, plan, true, currentStance);
         }
 
@@ -537,12 +556,39 @@ namespace BounceTheory
             motionMode = BounceMotionMode.Normal;
             ClearPendingInput();
             lastInputDecision = "Reset to starting hand; waiting for input.";
+            possessionState = PossessionState.Active;
+            possessionEndReason = PossessionEndReason.None;
+            hasPreviousAction = false;
+            previousAction = DribbleAction.Pound;
             spaceModifierConsumed = false;
             pendingPlainSpace = false;
             pendingPlainSpaceDeadline = 0f;
             SetContactIndicator(false);
             SyncAnchorHeights();
             SnapToCurrentHand();
+        }
+
+        public void RestartPossession()
+        {
+            ResetToStartingHand();
+            if (rhythmClock != null)
+                rhythmClock.RestartClock();
+            lastInputDecision = "Possession restarted; waiting for input.";
+            Log("possession restarted");
+        }
+
+        public void EndPossession(PossessionEndReason reason)
+        {
+            if (possessionState == PossessionState.Ended) return;
+
+            possessionState = PossessionState.Ended;
+            possessionEndReason = reason == PossessionEndReason.None ? PossessionEndReason.Manual : reason;
+            ClearPendingInput();
+            pendingPlainSpace = false;
+            pendingPlainSpaceDeadline = 0f;
+            spaceModifierConsumed = false;
+            lastInputDecision = $"Possession ended: {possessionEndReason}.";
+            Log(lastInputDecision);
         }
 
         public void Configure(Transform leftAnchor, Transform rightAnchor, GameObject contactIndicator)
@@ -588,6 +634,36 @@ namespace BounceTheory
             return false;
         }
 
+        private bool TryCreateContactPlan(double elapsed, double dsp, bool simulated, out ContactTimingPlan plan)
+        {
+            plan = default;
+            if (possessionState == PossessionState.Ended)
+            {
+                lastInputDecision = $"Rejected: possession ended ({possessionEndReason}). Restart to continue.";
+                return false;
+            }
+
+            double referenceOverride = CurrentReferenceContactBeatOverride();
+            if (rhythmClock != null &&
+                !rhythmClock.HasAvailableContinuationTargetAtElapsedTime(
+                    elapsed, minimumReadableContactApproachTime, referenceOverride))
+            {
+                EndPossession(PossessionEndReason.ContinuationWindowExpired);
+                return false;
+            }
+
+            plan = CreateContactPlan(elapsed, dsp, simulated);
+            return true;
+        }
+
+        private double CurrentReferenceContactBeatOverride()
+        {
+            return (logicalPhase == BallLogicalPhase.Descending || logicalPhase == BallLogicalPhase.FloorContact) &&
+                   activeContactPlan.TargetContactBeat > 0
+                ? activeContactPlan.TargetContactBeat
+                : double.NaN;
+        }
+
         private ContactTimingPlan CreateContactPlan(double elapsed, double dsp, bool simulated)
         {
             if (rhythmClock == null)
@@ -598,10 +674,7 @@ namespace BounceTheory
                     elapsed + reference, dsp + reference, elapsed + reference);
             }
             bool preferHalfBeat = logicalPhase == BallLogicalPhase.Returning;
-            double referenceOverride = (logicalPhase == BallLogicalPhase.Descending || logicalPhase == BallLogicalPhase.FloorContact) &&
-                                       activeContactPlan.TargetContactBeat > 0
-                ? activeContactPlan.TargetContactBeat
-                : double.NaN;
+            double referenceOverride = CurrentReferenceContactBeatOverride();
             return rhythmClock.PlanNextContactAtElapsedTime(elapsed, dsp, ReferenceDescentDuration,
                 minimumReadableContactApproachTime, preferHalfBeat, referenceOverride);
         }
@@ -848,6 +921,8 @@ namespace BounceTheory
             lastActualFloorContactDsp = actualDsp;
             lastContactErrorMilliseconds = (actualDsp - lastTargetFloorContactDsp) * 1000.0;
             completedDribbleCount++;
+            previousAction = activeAction;
+            hasPreviousAction = true;
             if (activeAction == DribbleAction.Crossover)
             {
                 currentHand = activeTargetHand;
@@ -949,34 +1024,51 @@ namespace BounceTheory
         {
             if (!showDebugOverlay) return;
             const float width = 540f;
-            GUI.Box(new Rect(18, 18, width, 436), "Bounce Theory — Target Contact / Rhythm Debug");
-            GUI.Label(new Rect(32, 45, width - 24, 22), $"Current hand: {currentHand}   Stance: {currentStance}   Action: {activeAction}   Phase: {logicalPhase}");
+            GUI.Box(new Rect(18, 18, width, 480), "Bounce Theory — Target Contact / Rhythm Debug");
+            GUI.Label(new Rect(32, 45, width - 24, 22), $"Possession: {possessionState}   End reason: {possessionEndReason}");
+            GUI.Label(new Rect(32, 67, width - 24, 22), $"Current hand: {currentHand}   Stance: {currentStance}   Action: {activeAction}   Phase: {logicalPhase}");
             if (rhythmClock != null)
             {
-                GUI.Label(new Rect(32, 67, width - 24, 22), $"BPM: {rhythmClock.Bpm:0.##}   Global beat: {rhythmClock.CurrentBeatPosition:0.000}   Phase: {rhythmClock.CurrentBeatPhase:0.000}");
-                GUI.Label(new Rect(32, 89, width - 24, 22), $"Subdivision: {rhythmClock.CurrentSubdivision + 1}/{rhythmClock.SubdivisionsPerBeat}");
+                GUI.Label(new Rect(32, 89, width - 24, 22), $"BPM: {rhythmClock.Bpm:0.##}   Global beat: {rhythmClock.CurrentBeatPosition:0.000}   Phase: {rhythmClock.CurrentBeatPhase:0.000}");
+                GUI.Label(new Rect(32, 111, width - 24, 22), $"Subdivision: {rhythmClock.CurrentSubdivision + 1}/{rhythmClock.SubdivisionsPerBeat}");
                 string previous = rhythmClock.HasPreviousBallEvent ? $"{rhythmClock.PreviousBallEventElapsedSeconds:0.000}s (grid {rhythmClock.PreviousBallEventAlignedBeat:0.##})" : "None — first input uses global beat";
-                GUI.Label(new Rect(32, 111, width - 24, 22), $"Previous floor event: {previous}");
+                GUI.Label(new Rect(32, 133, width - 24, 22), $"Previous floor event: {previous}");
             }
             string result = lastTimingJudgment.IsValid ? lastTimingJudgment.Result.ToString() : "Waiting";
             string error = lastTimingJudgment.IsValid ? $"{lastTimingJudgment.ErrorMilliseconds:+0.0;-0.0;0.0} ms" : "—";
             string direction = lastTimingJudgment.IsValid ? lastTimingJudgment.Direction.ToString() : "—";
             string interval = lastTimingJudgment.HasRhythmicInterval ? RhythmicIntervalCatalog.Label(lastTimingJudgment.Interval) : "Global beat / first input";
-            GUI.Label(new Rect(32, 133, width - 24, 22), $"Selected interval: {interval}   Motion: {motionMode}   Action profile: {activeActionStance}");
-            GUI.Label(new Rect(32, 155, width - 24, 22), $"Input timing: {result}   Error: {error}   Direction: {direction}");
-            GUI.Label(new Rect(32, 177, width - 24, 22), $"Keypress DSP: {(activeContactPlan.InputDspTimestamp > 0 ? activeContactPlan.InputDspTimestamp.ToString("0.000000") : "—")}");
-            GUI.Label(new Rect(32, 199, width - 24, 22), $"Target floor-contact DSP: {(activeContactPlan.TargetContactDspTimestamp > 0 ? activeContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}");
-            GUI.Label(new Rect(32, 221, width - 24, 22), $"Actual floor-contact DSP: {(lastActualFloorContactDsp > 0 ? lastActualFloorContactDsp.ToString("0.000000") : "—")}");
-            GUI.Label(new Rect(32, 243, width - 24, 22), $"Contact error: {(lastActualFloorContactDsp > 0 ? lastContactErrorMilliseconds.ToString("+0.0;-0.0;0.0") + " ms" : "—")}");
-            GUI.Label(new Rect(32, 265, width - 24, 22), $"Pending input: {(hasPendingInput ? pendingAction + " / " + pendingActionStance : "No")}");
-            GUI.Label(new Rect(32, 287, width - 24, 22), $"Pending keypress DSP: {(hasPendingInput ? pendingContactPlan.InputDspTimestamp.ToString("0.000000") : "—")}");
-            GUI.Label(new Rect(32, 309, width - 24, 22), $"Pending target DSP: {(hasPendingInput ? pendingContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}   Interval: {(hasPendingInput ? RhythmicIntervalCatalog.Label(pendingContactPlan.Interval) : "—")}");
-            GUI.Label(new Rect(32, 331, width - 24, 42), $"Last decision/failure: {lastInputDecision}");
-            GUI.Label(new Rect(32, 375, width - 24, 22), currentHand == BallHand.Left
+            GUI.Label(new Rect(32, 155, width - 24, 22), $"Selected interval: {interval}   Motion: {motionMode}   Action profile: {activeActionStance}");
+            GUI.Label(new Rect(32, 177, width - 24, 22), $"Input timing: {result}   Error: {error}   Direction: {direction}");
+            GUI.Label(new Rect(32, 199, width - 24, 22), $"Keypress DSP: {(activeContactPlan.InputDspTimestamp > 0 ? activeContactPlan.InputDspTimestamp.ToString("0.000000") : "—")}");
+            GUI.Label(new Rect(32, 221, width - 24, 22), $"Target floor-contact DSP: {(activeContactPlan.TargetContactDspTimestamp > 0 ? activeContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}");
+            GUI.Label(new Rect(32, 243, width - 24, 22), $"Actual floor-contact DSP: {(lastActualFloorContactDsp > 0 ? lastActualFloorContactDsp.ToString("0.000000") : "—")}");
+            GUI.Label(new Rect(32, 265, width - 24, 22), $"Contact error: {(lastActualFloorContactDsp > 0 ? lastContactErrorMilliseconds.ToString("+0.0;-0.0;0.0") + " ms" : "—")}");
+            GUI.Label(new Rect(32, 287, width - 24, 22), $"Pending input: {(hasPendingInput ? pendingAction + " / " + pendingActionStance : "No")}");
+            GUI.Label(new Rect(32, 309, width - 24, 22), $"Pending keypress DSP: {(hasPendingInput ? pendingContactPlan.InputDspTimestamp.ToString("0.000000") : "—")}");
+            GUI.Label(new Rect(32, 331, width - 24, 22), $"Pending target DSP: {(hasPendingInput ? pendingContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}   Interval: {(hasPendingInput ? RhythmicIntervalCatalog.Label(pendingContactPlan.Interval) : "—")}");
+            GUI.Label(new Rect(32, 353, width - 24, 42), $"Last decision/failure: {lastInputDecision}");
+            GUI.Label(new Rect(32, 397, width - 24, 22), currentHand == BallHand.Left
                 ? "Inputs: W pound / D cross / A hesi / S behind-back / Space stance"
                 : "Inputs: Up pound / Left cross / Right hesi / Down behind-back / Space stance");
-            GUI.Label(new Rect(32, 397, width - 24, 22), $"Stance modifier grace: {stanceModifierGraceSeconds * 1000f:0} ms   Pending Space: {(pendingPlainSpace ? "Yes" : "No")}");
-            GUI.Label(new Rect(32, 419, width - 24, 22), "Impact sound fires only at measured FloorContact.");
+            GUI.Label(new Rect(32, 419, width - 24, 22), $"Stance modifier grace: {stanceModifierGraceSeconds * 1000f:0} ms   Pending Space: {(pendingPlainSpace ? "Yes" : "No")}");
+            GUI.Label(new Rect(32, 441, width - 24, 22), $"Previous resolved action: {(hasPreviousAction ? previousAction.ToString() : "None")}   R = restart");
+            GUI.Label(new Rect(32, 463, width - 24, 22), "Impact sound fires only at measured FloorContact.");
+
+            if (possessionState == PossessionState.Ended)
+            {
+                const float restartWidth = 360f;
+                const float restartHeight = 150f;
+                Rect restartRect = new Rect((Screen.width - restartWidth) * .5f, (Screen.height - restartHeight) * .5f,
+                    restartWidth, restartHeight);
+                GUI.Box(restartRect, "Possession Ended");
+                GUI.Label(new Rect(restartRect.x + 24f, restartRect.y + 38f, restartWidth - 48f, 24f),
+                    $"Reason: {possessionEndReason}");
+                GUI.Label(new Rect(restartRect.x + 24f, restartRect.y + 64f, restartWidth - 48f, 24f),
+                    "Prototype restart — final menu/failure rules are not implemented.");
+                if (GUI.Button(new Rect(restartRect.x + 90f, restartRect.y + 98f, 180f, 34f), "Restart (R)"))
+                    RestartPossession();
+            }
         }
     }
 }
