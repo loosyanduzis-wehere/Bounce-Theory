@@ -11,6 +11,8 @@ namespace BounceTheory
     public enum PlayerStance { Low, Medium, High }
     public enum PossessionState { Active, Ended }
     public enum PossessionEndReason { None, ContinuationWindowExpired, Manual }
+    public enum BallControlQuality { Secure, Recovering, Exposed }
+    public enum FollowUpRelation { FirstAction, Repeat, SameHandVariation, Transfer, CounterTransfer }
 
     /// <summary>Rhythm input is authoritative; one judged follow-up may wait for Controlled.</summary>
     public sealed class PoundDribbleController : MonoBehaviour
@@ -113,6 +115,8 @@ namespace BounceTheory
         private float activeArcLift;
         private PlayerStance activeActionStance = PlayerStance.Medium;
         private DribbleAction activeAction = DribbleAction.Pound;
+        private BallControlQuality activeControlQuality = BallControlQuality.Secure;
+        private FollowUpRelation activeFollowUpRelation = FollowUpRelation.FirstAction;
         private BallHand activeSourceHand;
         private BallHand activeTargetHand;
         private int completedDribbleCount;
@@ -129,6 +133,7 @@ namespace BounceTheory
         private ContactTimingPlan pendingContactPlan;
         private DribbleAction pendingAction = DribbleAction.Pound;
         private PlayerStance pendingActionStance = PlayerStance.Medium;
+        private FollowUpRelation pendingFollowUpRelation = FollowUpRelation.FirstAction;
         private bool pendingUsesSimulatedTime;
         private double lastTargetFloorContactDsp;
         private double lastActualFloorContactDsp;
@@ -138,6 +143,11 @@ namespace BounceTheory
         private PossessionEndReason possessionEndReason = PossessionEndReason.None;
         private bool hasPreviousAction;
         private DribbleAction previousAction = DribbleAction.Pound;
+        private PlayerStance previousActionStance = PlayerStance.Medium;
+        private TimingJudgment previousActionJudgment = TimingJudgment.None;
+        private BallHand previousResolvedHand;
+        private BallControlQuality previousControlQuality = BallControlQuality.Secure;
+        private int sequenceActionCount;
         private bool spaceModifierConsumed;
         private bool pendingPlainSpace;
         private float pendingPlainSpaceDeadline;
@@ -208,6 +218,14 @@ namespace BounceTheory
         public PossessionEndReason CurrentPossessionEndReason => possessionEndReason;
         public bool HasPreviousAction => hasPreviousAction;
         public DribbleAction PreviousAction => previousAction;
+        public PlayerStance PreviousActionStance => previousActionStance;
+        public TimingJudgment PreviousActionJudgment => previousActionJudgment;
+        public BallHand PreviousResolvedHand => previousResolvedHand;
+        public BallControlQuality PreviousControlQuality => previousControlQuality;
+        public BallControlQuality ActiveControlQuality => activeControlQuality;
+        public FollowUpRelation ActiveFollowUpRelation => activeFollowUpRelation;
+        public FollowUpRelation PendingFollowUpRelation => pendingFollowUpRelation;
+        public int SequenceActionCount => sequenceActionCount;
 
         public event Action<BallHand> DribbleStarted;
         public event Action<BallHand> FloorContactReached;
@@ -551,6 +569,8 @@ namespace BounceTheory
             activeContactPlan = default;
             activeAction = DribbleAction.Pound;
             activeActionStance = PlayerStance.Medium;
+            activeControlQuality = BallControlQuality.Secure;
+            activeFollowUpRelation = FollowUpRelation.FirstAction;
             activeSourceHand = currentHand;
             activeTargetHand = currentHand;
             motionMode = BounceMotionMode.Normal;
@@ -560,6 +580,11 @@ namespace BounceTheory
             possessionEndReason = PossessionEndReason.None;
             hasPreviousAction = false;
             previousAction = DribbleAction.Pound;
+            previousActionStance = PlayerStance.Medium;
+            previousActionJudgment = TimingJudgment.None;
+            previousResolvedHand = currentHand;
+            previousControlQuality = BallControlQuality.Secure;
+            sequenceActionCount = 0;
             spaceModifierConsumed = false;
             pendingPlainSpace = false;
             pendingPlainSpaceDeadline = 0f;
@@ -683,6 +708,7 @@ namespace BounceTheory
             PlayerStance acceptedStance)
         {
             TimingJudgment judgment = plan.Judgment;
+            FollowUpRelation relation = DetermineFollowUpRelation(action);
             lastTimingJudgment = judgment;
             timingJudgmentCount++;
             TimingJudged?.Invoke(judgment);
@@ -690,8 +716,8 @@ namespace BounceTheory
             if (logicalPhase == BallLogicalPhase.Controlled || logicalPhase == BallLogicalPhase.Returning)
             {
                 BallLogicalPhase sourcePhase = logicalPhase;
-                if (!BeginDribble(action, plan, simulated, acceptedStance)) return false;
-                lastInputDecision = $"Accepted {action} from {sourcePhase}; contact scheduled on the global grid.";
+                if (!BeginDribble(action, plan, simulated, acceptedStance, relation)) return false;
+                lastInputDecision = $"Accepted {action} from {sourcePhase} as {relation}; contact scheduled on the global grid.";
                 return true;
             }
             if (!hasPendingInput)
@@ -700,9 +726,10 @@ namespace BounceTheory
                 pendingContactPlan = plan;
                 pendingAction = action;
                 pendingActionStance = acceptedStance;
+                pendingFollowUpRelation = relation;
                 pendingUsesSimulatedTime = simulated;
-                lastInputDecision = $"Accepted {action} and queued during {logicalPhase}; contact target preserved.";
-                Log($"{action} follow-up queued — target DSP {plan.TargetContactDspTimestamp:0.000000}, {RhythmicIntervalCatalog.Label(plan.Interval)}");
+                lastInputDecision = $"Accepted {action} as {relation} and queued during {logicalPhase}; contact target preserved.";
+                Log($"{action} {relation} follow-up queued — target DSP {plan.TargetContactDspTimestamp:0.000000}, {RhythmicIntervalCatalog.Label(plan.Interval)}");
                 return true;
             }
 
@@ -712,7 +739,7 @@ namespace BounceTheory
         }
 
         private bool BeginDribble(DribbleAction action, ContactTimingPlan plan, bool simulated,
-            PlayerStance acceptedStance)
+            PlayerStance acceptedStance, FollowUpRelation followUpRelation)
         {
             BallHand sourceHand = currentHand;
             bool transfersHand = action == DribbleAction.Crossover || action == DribbleAction.BehindTheBack;
@@ -770,6 +797,8 @@ namespace BounceTheory
             activeUsesSimulatedTime = simulated;
             activeAction = action;
             activeActionStance = acceptedStance;
+            activeControlQuality = ControlQualityFor(plan.Judgment.Result);
+            activeFollowUpRelation = followUpRelation;
             activeSourceHand = sourceHand;
             activeTargetHand = targetHand;
             motionMode = remaining < ReferenceDescentDuration * .9 || startPosition.y < minimumFastBounceHeight
@@ -785,9 +814,61 @@ namespace BounceTheory
             logicalPhase = BallLogicalPhase.Descending;
             SetContactIndicator(false);
             DribbleStarted?.Invoke(activeSourceHand);
-            Log($"{action} began — input DSP {plan.InputDspTimestamp:0.000000}, target contact DSP {plan.TargetContactDspTimestamp:0.000000}, mode {motionMode}, stance profile {activeActionStance}");
+            Log($"{action} began — input DSP {plan.InputDspTimestamp:0.000000}, target contact DSP {plan.TargetContactDspTimestamp:0.000000}, mode {motionMode}, stance {activeActionStance}, relation {activeFollowUpRelation}, control {activeControlQuality}");
             return true;
         }
+
+        public static BallControlQuality ControlQualityFor(TimingResult result)
+        {
+            switch (result)
+            {
+                case TimingResult.Early:
+                case TimingResult.Late:
+                    return BallControlQuality.Recovering;
+                case TimingResult.BrokenRhythm:
+                    return BallControlQuality.Exposed;
+                default:
+                    return BallControlQuality.Secure;
+            }
+        }
+
+        private FollowUpRelation DetermineFollowUpRelation(DribbleAction nextAction)
+        {
+            if (!TryGetImmediatePreviousAction(out DribbleAction previous))
+                return FollowUpRelation.FirstAction;
+
+            if (previous == nextAction)
+                return FollowUpRelation.Repeat;
+
+            bool nextTransfers = TransfersHand(nextAction);
+            if (!nextTransfers)
+                return FollowUpRelation.SameHandVariation;
+
+            return TransfersHand(previous)
+                ? FollowUpRelation.CounterTransfer
+                : FollowUpRelation.Transfer;
+        }
+
+        private bool TryGetImmediatePreviousAction(out DribbleAction previous)
+        {
+            if (logicalPhase == BallLogicalPhase.Descending || logicalPhase == BallLogicalPhase.FloorContact)
+            {
+                previous = activeAction;
+                return true;
+            }
+
+            if (hasPreviousAction)
+            {
+                previous = previousAction;
+                return true;
+            }
+
+            previous = DribbleAction.Pound;
+            return false;
+        }
+
+        private static bool TransfersHand(DribbleAction action) =>
+            action == DribbleAction.Crossover || action == DribbleAction.BehindTheBack;
 
         private void ApplyTimingProfile(TimingResult result)
         {
@@ -922,7 +1003,11 @@ namespace BounceTheory
             lastContactErrorMilliseconds = (actualDsp - lastTargetFloorContactDsp) * 1000.0;
             completedDribbleCount++;
             previousAction = activeAction;
+            previousActionStance = activeActionStance;
+            previousActionJudgment = activeContactPlan.Judgment;
+            previousControlQuality = activeControlQuality;
             hasPreviousAction = true;
+            sequenceActionCount++;
             if (activeAction == DribbleAction.Crossover)
             {
                 currentHand = activeTargetHand;
@@ -933,6 +1018,7 @@ namespace BounceTheory
                 currentHand = activeTargetHand;
                 completedBehindBackCount++;
             }
+            previousResolvedHand = currentHand;
             PositionContactIndicator();
             SetContactIndicator(true);
             PlayBounceSound();
@@ -984,9 +1070,10 @@ namespace BounceTheory
             ContactTimingPlan plan = pendingContactPlan;
             DribbleAction action = pendingAction;
             PlayerStance acceptedStance = pendingActionStance;
+            FollowUpRelation relation = pendingFollowUpRelation;
             bool simulated = pendingUsesSimulatedTime;
             ClearPendingInput();
-            if (BeginDribble(action, plan, simulated, acceptedStance))
+            if (BeginDribble(action, plan, simulated, acceptedStance, relation))
             {
                 lastInputDecision = "Queued input executing without rejudgment; original contact target preserved.";
                 return true;
@@ -1000,6 +1087,7 @@ namespace BounceTheory
             pendingContactPlan = default;
             pendingAction = DribbleAction.Pound;
             pendingActionStance = PlayerStance.Medium;
+            pendingFollowUpRelation = FollowUpRelation.FirstAction;
             pendingUsesSimulatedTime = false;
         }
 
@@ -1027,7 +1115,7 @@ namespace BounceTheory
                 const float width = 540f;
             GUI.Box(new Rect(18, 18, width, 480), "Bounce Theory — Target Contact / Rhythm Debug");
             GUI.Label(new Rect(32, 45, width - 24, 22), $"Possession: {possessionState}   End reason: {possessionEndReason}");
-            GUI.Label(new Rect(32, 67, width - 24, 22), $"Current hand: {currentHand}   Stance: {currentStance}   Action: {activeAction}   Phase: {logicalPhase}");
+            GUI.Label(new Rect(32, 67, width - 24, 22), $"Hand: {currentHand}   Stance: {currentStance}   Action: {activeAction}   Phase: {logicalPhase}   Control: {activeControlQuality}");
             if (rhythmClock != null)
             {
                 GUI.Label(new Rect(32, 89, width - 24, 22), $"BPM: {rhythmClock.Bpm:0.##}   Global beat: {rhythmClock.CurrentBeatPosition:0.000}   Phase: {rhythmClock.CurrentBeatPhase:0.000}");
@@ -1045,7 +1133,7 @@ namespace BounceTheory
             GUI.Label(new Rect(32, 221, width - 24, 22), $"Target floor-contact DSP: {(activeContactPlan.TargetContactDspTimestamp > 0 ? activeContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}");
             GUI.Label(new Rect(32, 243, width - 24, 22), $"Actual floor-contact DSP: {(lastActualFloorContactDsp > 0 ? lastActualFloorContactDsp.ToString("0.000000") : "—")}");
             GUI.Label(new Rect(32, 265, width - 24, 22), $"Contact error: {(lastActualFloorContactDsp > 0 ? lastContactErrorMilliseconds.ToString("+0.0;-0.0;0.0") + " ms" : "—")}");
-            GUI.Label(new Rect(32, 287, width - 24, 22), $"Pending input: {(hasPendingInput ? pendingAction + " / " + pendingActionStance : "No")}");
+            GUI.Label(new Rect(32, 287, width - 24, 22), $"Pending input: {(hasPendingInput ? pendingAction + " / " + pendingActionStance + " / " + pendingFollowUpRelation : "No")}");
             GUI.Label(new Rect(32, 309, width - 24, 22), $"Pending keypress DSP: {(hasPendingInput ? pendingContactPlan.InputDspTimestamp.ToString("0.000000") : "—")}");
             GUI.Label(new Rect(32, 331, width - 24, 22), $"Pending target DSP: {(hasPendingInput ? pendingContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}   Interval: {(hasPendingInput ? RhythmicIntervalCatalog.Label(pendingContactPlan.Interval) : "—")}");
             GUI.Label(new Rect(32, 353, width - 24, 42), $"Last decision/failure: {lastInputDecision}");
@@ -1053,8 +1141,10 @@ namespace BounceTheory
                 ? "Inputs: W pound / D cross / A hesi / S behind-back / Space stance"
                 : "Inputs: Up pound / Left cross / Right hesi / Down behind-back / Space stance");
             GUI.Label(new Rect(32, 419, width - 24, 22), $"Stance modifier grace: {stanceModifierGraceSeconds * 1000f:0} ms   Pending Space: {(pendingPlainSpace ? "Yes" : "No")}");
-            GUI.Label(new Rect(32, 441, width - 24, 22), $"Previous resolved action: {(hasPreviousAction ? previousAction.ToString() : "None")}   R = restart");
-                GUI.Label(new Rect(32, 463, width - 24, 22), "Impact sound fires only at measured FloorContact.");
+            GUI.Label(new Rect(32, 441, width - 24, 22), hasPreviousAction
+                ? $"Resolved #{sequenceActionCount}: {previousAction} / {previousActionStance} / {previousActionJudgment.Result} / {previousControlQuality} / hand {previousResolvedHand}"
+                : $"Resolved sequence: None   Active relation: {activeFollowUpRelation}   R = restart");
+                GUI.Label(new Rect(32, 463, width - 24, 22), $"Active relation: {activeFollowUpRelation}   Impact sound fires at FloorContact.");
             }
 
             if (possessionState == PossessionState.Ended)
