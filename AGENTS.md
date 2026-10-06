@@ -161,6 +161,17 @@ Do not create stylistic churn, broad refactors, or unrelated cleanup merely beca
 
   > Every bounce creates an obligation, but not every obligation is another bounce.
 
+
+## Prototype Recovery / Restart Path
+
+For interactive or stateful prototypes, add a minimal recovery/reset path early in development rather than waiting for final menus or complete failure-state design.
+
+- Prefer a simple key, debug button, or temporary overlay first.
+- The reset operation should restore a known-good baseline and clear transient state needed to resume testing.
+- Keep restart mechanics separate from final restart triggers: the reset path can be stable while the conditions that end a run/possession/session remain provisional.
+- Expand the reset path as new systems gain state so testers do not need to stop Play Mode or manually repair the prototype after a stuck or terminal state.
+- Do not treat temporary prototype restart triggers as permanent game-design rules unless explicitly promoted into the Source of Truth.
+
 ## Working Style
 
 - Inspect the existing implementation before creating a new system.
