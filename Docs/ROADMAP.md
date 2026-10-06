@@ -48,7 +48,7 @@ Do not implement all of these as one task. Promote one small task at a time into
 
 ## Milestone 3 — Stance
 
-**Status:** IN PROGRESS
+**Status:** PROTOTYPE COMPLETE
 
 Working control design:
 
@@ -71,12 +71,17 @@ Completed behavior experiment:
 
 - Stance-dependent pound bounce profile — `BT-ST-02`
 
-Next planned areas:
+Completed behavior pass:
 
-- Complete prototype stance behavior pass across crossover, hesitation, and behind-the-back
-- Define stance effects on rhythm
-- Define stance effects on exposure
-- Define stance-dependent follow-up actions
+- Complete prototype stance behavior across crossover, hesitation, and behind-the-back — `BT-ST-03`
+
+Deferred until interacting systems exist:
+
+- Stance effects on rhythm
+- Stance effects on exposure
+- Stance-dependent follow-up rules
+
+These remain future tuning/integration work rather than blockers for the prototype stance milestone.
 
 ---
 
