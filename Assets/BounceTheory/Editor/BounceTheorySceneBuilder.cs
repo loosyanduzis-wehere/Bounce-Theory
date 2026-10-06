@@ -1022,6 +1022,255 @@ namespace BounceTheory.Editor
             return new PoundProfileSample(midpointHeight, plan);
         }
 
+        [MenuItem("Bounce Theory/Validate BT-ST-03 Complete Stance Profiles")]
+        public static void ValidateCompleteStanceProfiles()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var errors = new List<string>();
+            GameObject offense = Required("OffensivePlayer", errors);
+            GameObject defender = Required("Defender", errors);
+            GameObject ball = Required("Basketball", errors);
+            GameObject cameraObject = Required("Main Camera", errors);
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            PrototypeStanceVisual visual = offense ? offense.GetComponent<PrototypeStanceVisual>() : null;
+            Transform leftAnchor = offense ? offense.transform.Find("LeftHandBallAnchor") : null;
+            Transform rightAnchor = offense ? offense.transform.Find("RightHandBallAnchor") : null;
+
+            if (!clock) errors.Add("Reusable RhythmClock is missing.");
+            if (!controller) errors.Add("PoundDribbleController is missing.");
+            if (!visual) errors.Add("PrototypeStanceVisual is missing.");
+            if (!leftAnchor || !rightAnchor) errors.Add("Ball hand anchors are missing.");
+            if (UnityEngine.Object.FindAnyObjectByType<Rigidbody>()) errors.Add("A Rigidbody was introduced.");
+            if (UnityEngine.Object.FindAnyObjectByType<CharacterController>()) errors.Add("A CharacterController was introduced.");
+
+            if (controller && clock && visual && leftAnchor && rightAnchor && offense && defender && cameraObject)
+            {
+                Vector3 offensePosition = offense.transform.position;
+                Vector3 defenderPosition = defender.transform.position;
+                Vector3 cameraPosition = cameraObject.transform.position;
+                Quaternion cameraRotation = cameraObject.transform.rotation;
+
+                ActionProfileSample lowCross = CaptureActionProfile(controller, clock, DribbleAction.Crossover,
+                    PlayerStance.Low, true, errors);
+                ActionProfileSample mediumCross = CaptureActionProfile(controller, clock, DribbleAction.Crossover,
+                    PlayerStance.Medium, false, errors);
+                ActionProfileSample highCross = CaptureActionProfile(controller, clock, DribbleAction.Crossover,
+                    PlayerStance.High, false, errors);
+                ValidateSharedTiming("Crossover", lowCross, mediumCross, highCross, errors);
+                if (!(lowCross.Midpoint.y < mediumCross.Midpoint.y && mediumCross.Midpoint.y < highCross.Midpoint.y))
+                    errors.Add("Crossover midpoint profiles are not ordered Low < Medium < High.");
+                Vector3 crossContact = Vector3.Lerp(leftAnchor.position, rightAnchor.position,
+                    controller.CrossoverContactLateralProgress);
+                crossContact.y = controller.FloorHeight;
+                Vector3 expectedMediumCross = Vector3.Lerp(leftAnchor.position, crossContact, .5f);
+                if (Vector3.Distance(mediumCross.Midpoint, expectedMediumCross) > .002f)
+                    errors.Add("Medium crossover no longer matches the original linear baseline trajectory.");
+
+                ActionProfileSample lowHesitation = CaptureActionProfile(controller, clock, DribbleAction.Hesitation,
+                    PlayerStance.Low, true, errors);
+                ActionProfileSample mediumHesitation = CaptureActionProfile(controller, clock, DribbleAction.Hesitation,
+                    PlayerStance.Medium, false, errors);
+                ActionProfileSample highHesitation = CaptureActionProfile(controller, clock, DribbleAction.Hesitation,
+                    PlayerStance.High, false, errors);
+                ValidateSharedTiming("Hesitation", lowHesitation, mediumHesitation, highHesitation, errors);
+                if (!(lowHesitation.Midpoint.y < mediumHesitation.Midpoint.y &&
+                      mediumHesitation.Midpoint.y < highHesitation.Midpoint.y))
+                    errors.Add("Hesitation midpoint profiles are not ordered Low < Medium < High.");
+                float baselineDescentT = (.5f - controller.HesitationHoldFraction) /
+                                         (1f - controller.HesitationHoldFraction);
+                float baselineShaped = baselineDescentT * baselineDescentT * (3f - 2f * baselineDescentT);
+                Vector3 heldPosition = leftAnchor.position + Vector3.up * controller.HesitationLift;
+                Vector3 hesitationFloor = new Vector3(leftAnchor.position.x, controller.FloorHeight, leftAnchor.position.z);
+                Vector3 expectedMediumHesitation = Vector3.Lerp(heldPosition, hesitationFloor, baselineShaped);
+                if (Vector3.Distance(mediumHesitation.Midpoint, expectedMediumHesitation) > .002f)
+                    errors.Add("Medium hesitation no longer matches the original hold/lift baseline trajectory.");
+
+                ActionProfileSample lowBehind = CaptureActionProfile(controller, clock, DribbleAction.BehindTheBack,
+                    PlayerStance.Low, true, errors);
+                ActionProfileSample mediumBehind = CaptureActionProfile(controller, clock, DribbleAction.BehindTheBack,
+                    PlayerStance.Medium, false, errors);
+                ActionProfileSample highBehind = CaptureActionProfile(controller, clock, DribbleAction.BehindTheBack,
+                    PlayerStance.High, false, errors);
+                ValidateSharedTiming("Behind-the-back", lowBehind, mediumBehind, highBehind, errors);
+                if (!(lowBehind.Midpoint.y < mediumBehind.Midpoint.y && mediumBehind.Midpoint.y < highBehind.Midpoint.y))
+                    errors.Add("Behind-the-back midpoint heights are not ordered Low < Medium < High.");
+                if (!(highBehind.Midpoint.z < mediumBehind.Midpoint.z && mediumBehind.Midpoint.z < lowBehind.Midpoint.z))
+                    errors.Add("Behind-the-back wrap depth is not ordered High > Medium > Low.");
+                if (!(highBehind.Contact.z < mediumBehind.Contact.z && mediumBehind.Contact.z < lowBehind.Contact.z))
+                    errors.Add("Behind-the-back contact depth is not ordered High > Medium > Low.");
+                Vector3 behindContact = Vector3.Lerp(leftAnchor.position, rightAnchor.position,
+                    controller.BehindBackContactLateralProgress);
+                behindContact = new Vector3(behindContact.x, controller.FloorHeight,
+                    behindContact.z - controller.BehindBackDepthOffset);
+                Vector3 behindControl = Vector3.Lerp(leftAnchor.position, behindContact, .5f);
+                behindControl.z = Mathf.Min(leftAnchor.position.z, behindContact.z) - controller.BehindBackWrapDepth;
+                Vector3 expectedMediumBehind = .25f * leftAnchor.position + .5f * behindControl + .25f * behindContact;
+                if (Vector3.Distance(mediumBehind.Midpoint, expectedMediumBehind) > .002f)
+                    errors.Add("Medium behind-the-back no longer matches the original depth/wrap baseline trajectory.");
+
+                ValidateQueuedStanceCapture(controller, clock, DribbleAction.Crossover, errors);
+                ValidateQueuedStanceCapture(controller, clock, DribbleAction.Hesitation, errors);
+                ValidateQueuedStanceCapture(controller, clock, DribbleAction.BehindTheBack, errors);
+
+                PoundProfileSample lowPound = CapturePoundProfile(controller, clock, PlayerStance.Low, true, errors);
+                PoundProfileSample mediumPound = CapturePoundProfile(controller, clock, PlayerStance.Medium, false, errors);
+                PoundProfileSample highPound = CapturePoundProfile(controller, clock, PlayerStance.High, false, errors);
+                if (!(lowPound.MidpointHeight < mediumPound.MidpointHeight && mediumPound.MidpointHeight < highPound.MidpointHeight))
+                    errors.Add("BT-ST-02 pound stance ordering regressed.");
+
+                ValidateStanceCycleAndVisuals(controller, visual, errors);
+                ValidateCrossoverCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateHesitationCycle(controller, clock, BallHand.Right, rightAnchor, errors);
+                ValidateBehindBackCycle(controller, clock, BallHand.Left, leftAnchor, rightAnchor, errors);
+                ValidateCrossoverDuringReturn(controller, clock, errors);
+                ValidateHesitationFollowUp(controller, clock, errors);
+                ValidateBehindBackFollowUp(controller, clock, errors);
+                ValidateTargetContactScheduling(controller, clock, errors);
+
+                AssertStill("OffensivePlayer", offensePosition, offense.transform.position, errors);
+                AssertStill("Defender", defenderPosition, defender.transform.position, errors);
+                AssertStill("Main Camera", cameraPosition, cameraObject.transform.position, errors);
+                if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                    errors.Add("Main Camera rotation changed during stance-profile validation.");
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException("BT-ST-03 validation failed:\n- " + string.Join("\n- ", errors));
+            Debug.Log("BT-ST-03 validation passed: Low, Medium, and High crossover, hesitation, and behind-the-back profiles are distinct; Medium preserves each original trajectory; accepted and queued stance profiles remain captured; DSP timing, contact targets, judgments, ownership, pound behavior, stance controls, and representative rhythm/contact regressions pass.");
+        }
+
+        private readonly struct ActionProfileSample
+        {
+            public readonly Vector3 Midpoint;
+            public readonly Vector3 Contact;
+            public readonly double InputDsp;
+            public readonly double TargetContactDsp;
+            public readonly TimingJudgment Judgment;
+
+            public ActionProfileSample(Vector3 midpoint, Vector3 contact, ContactTimingPlan plan)
+            {
+                Midpoint = midpoint;
+                Contact = contact;
+                InputDsp = plan.InputDspTimestamp;
+                TargetContactDsp = plan.TargetContactDspTimestamp;
+                Judgment = plan.Judgment;
+            }
+        }
+
+        private static ActionProfileSample CaptureActionProfile(PoundDribbleController controller, RhythmClock clock,
+            DribbleAction action, PlayerStance stance, bool changeStanceAfterAcceptance, ICollection<string> errors)
+        {
+            clock.ResetBallEventHistory();
+            controller.ResetToStartingHand();
+            controller.SetStartingHand(BallHand.Left);
+            controller.SetStance(stance);
+            int completedBefore = controller.CompletedDribbleCount;
+            double input = clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds;
+            if (!ProcessActionAtRhythmTime(controller, action, input))
+            {
+                errors.Add(stance + " " + action + " was not accepted.");
+                return default;
+            }
+
+            ContactTimingPlan plan = controller.ActiveContactPlan;
+            TimingJudgment judgment = controller.ActiveActionJudgment;
+            if (controller.ActiveActionStance != stance)
+                errors.Add(stance + " " + action + " did not capture its accepted stance profile.");
+            if (changeStanceAfterAcceptance)
+            {
+                controller.SetStance(PlayerStance.High);
+                if (controller.ActiveActionStance != stance || controller.ActiveActionJudgment.Result != judgment.Result ||
+                    Math.Abs(controller.ActiveContactPlan.InputDspTimestamp - plan.InputDspTimestamp) > .000001 ||
+                    Math.Abs(controller.ActiveContactPlan.TargetContactDspTimestamp - plan.TargetContactDspTimestamp) > .000001)
+                    errors.Add("Changing stance during active " + action + " rewrote its accepted profile or timing plan.");
+            }
+
+            float halfApproach = (float)((plan.TargetContactDspTimestamp - plan.InputDspTimestamp) * .5);
+            controller.Tick(halfApproach);
+            Vector3 midpoint = controller.transform.position;
+            for (int i = 0; i < 300 && controller.CompletedDribbleCount == completedBefore; i++)
+                controller.Tick(1f / 240f);
+            Vector3 contact = controller.transform.position;
+            if (controller.CompletedDribbleCount != completedBefore + 1)
+                errors.Add(stance + " " + action + " did not reach floor contact.");
+            if (Math.Abs(controller.LastContactErrorMilliseconds) > 6.0)
+                errors.Add(stance + " " + action + " exceeded the 6 ms floor-contact tolerance.");
+            BallHand expectedHand = action == DribbleAction.Crossover || action == DribbleAction.BehindTheBack
+                ? BallHand.Right
+                : BallHand.Left;
+            if (controller.CurrentHand != expectedHand)
+                errors.Add(stance + " " + action + " violated its hand-ownership rule.");
+            CompleteCurrentDribble(controller, errors);
+            return new ActionProfileSample(midpoint, contact, plan);
+        }
+
+        private static void ValidateSharedTiming(string label, ActionProfileSample low, ActionProfileSample medium,
+            ActionProfileSample high, ICollection<string> errors)
+        {
+            if (Math.Abs(low.InputDsp - medium.InputDsp) > .000001 || Math.Abs(medium.InputDsp - high.InputDsp) > .000001)
+                errors.Add(label + " stance profiles changed the keypress DSP timestamp.");
+            if (Math.Abs(low.TargetContactDsp - medium.TargetContactDsp) > .000001 ||
+                Math.Abs(medium.TargetContactDsp - high.TargetContactDsp) > .000001)
+                errors.Add(label + " stance profiles changed the target floor-contact DSP time.");
+            if (low.Judgment.Result != medium.Judgment.Result || medium.Judgment.Result != high.Judgment.Result ||
+                low.Judgment.Direction != medium.Judgment.Direction || medium.Judgment.Direction != high.Judgment.Direction)
+                errors.Add(label + " stance profiles changed the rhythm judgment.");
+        }
+
+        private static void ValidateQueuedStanceCapture(PoundDribbleController controller, RhythmClock clock,
+            DribbleAction queuedAction, ICollection<string> errors)
+        {
+            controller.ResetToStartingHand();
+            controller.SetStartingHand(BallHand.Left);
+            clock.ResetBallEventHistory();
+            double firstInput = clock.SecondsPerBeat - controller.ReferenceDescentDurationSeconds;
+            if (!controller.ProcessInputAtRhythmTime(true, false, firstInput))
+            {
+                errors.Add("Queued stance setup pound was not accepted for " + queuedAction + ".");
+                return;
+            }
+
+            controller.SetStance(PlayerStance.High);
+            double queuedInput = firstInput + .10;
+            if (!ProcessActionAtRhythmTime(controller, queuedAction, queuedInput))
+            {
+                errors.Add(queuedAction + " was not accepted into the pending input slot.");
+                return;
+            }
+            double pendingInputDsp = controller.PendingInputDspTimestamp;
+            double pendingTargetDsp = controller.PendingTargetContactDspTimestamp;
+            TimingJudgment pendingJudgment = controller.PendingTimingJudgment;
+            if (!controller.HasPendingInput || controller.PendingAction != queuedAction ||
+                controller.PendingActionStance != PlayerStance.High)
+                errors.Add(queuedAction + " did not preserve its accepted High stance in the pending slot.");
+
+            controller.SetStance(PlayerStance.Low);
+            if (controller.PendingActionStance != PlayerStance.High ||
+                Math.Abs(controller.PendingInputDspTimestamp - pendingInputDsp) > .000001 ||
+                Math.Abs(controller.PendingTargetContactDspTimestamp - pendingTargetDsp) > .000001 ||
+                controller.PendingTimingJudgment.Result != pendingJudgment.Result ||
+                controller.PendingTimingJudgment.Direction != pendingJudgment.Direction)
+                errors.Add("Changing current stance rewrote queued " + queuedAction + " profile or timing data.");
+        }
+
+        private static bool ProcessActionAtRhythmTime(PoundDribbleController controller, DribbleAction action,
+            double elapsed)
+        {
+            switch (action)
+            {
+                case DribbleAction.Crossover:
+                    return controller.ProcessCrossoverInputAtRhythmTime(true, false, elapsed);
+                case DribbleAction.Hesitation:
+                    return controller.ProcessHesitationInputAtRhythmTime(true, false, elapsed);
+                case DribbleAction.BehindTheBack:
+                    return controller.ProcessBehindBackInputAtRhythmTime(true, false, elapsed);
+                default:
+                    return controller.ProcessInputAtRhythmTime(true, false, elapsed);
+            }
+        }
+
         public static void CapturePreview()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);

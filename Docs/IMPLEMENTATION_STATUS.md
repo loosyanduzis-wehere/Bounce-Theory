@@ -160,7 +160,7 @@ Codex must inspect the actual project before assuming this list is exhaustive.
 ## 5. Current Task — BT-ST-03
 
 **Title:** Complete Prototype Stance Behavior Pass  
-**Status:** PLANNED
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 

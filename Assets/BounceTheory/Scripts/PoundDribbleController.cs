@@ -40,6 +40,24 @@ namespace BounceTheory
         [SerializeField, Min(0f)] private float lowPoundMidpointDrop = 0.24f;
         [SerializeField, Min(0f)] private float highPoundArcLift = 0.38f;
 
+        [Header("Stance Crossover Profile")]
+        [SerializeField, Min(0f)] private float lowCrossoverMidpointDrop = 0.16f;
+        [SerializeField, Min(0f)] private float highCrossoverArcLift = 0.28f;
+
+        [Header("Stance Hesitation Profile")]
+        [SerializeField, Range(0f, 0.2f)] private float lowHesitationHoldReduction = 0.08f;
+        [SerializeField, Min(0f)] private float lowHesitationLiftReduction = 0.10f;
+        [SerializeField, Range(0f, 0.2f)] private float highHesitationHoldAddition = 0.10f;
+        [SerializeField, Min(0f)] private float highHesitationLiftAddition = 0.24f;
+
+        [Header("Stance Behind-The-Back Profile")]
+        [SerializeField, Min(0f)] private float lowBehindBackDepthReduction = 0.16f;
+        [SerializeField, Min(0f)] private float lowBehindBackWrapReduction = 0.10f;
+        [SerializeField, Min(0f)] private float lowBehindBackMidpointDrop = 0.12f;
+        [SerializeField, Min(0f)] private float highBehindBackDepthAddition = 0.06f;
+        [SerializeField, Min(0f)] private float highBehindBackWrapAddition = 0.04f;
+        [SerializeField, Min(0f)] private float highBehindBackArcLift = 0.08f;
+
         [Header("Adaptive Contact Motion")]
         [SerializeField, Min(0.1f)] private float minimumFastBounceHeight = 1.0f;
         [SerializeField, Min(0.5f)] private float maximumDescentSpeed = 8.0f;
@@ -91,7 +109,7 @@ namespace BounceTheory
         private float activeReturnDuration;
         private float activeLateralDrift;
         private float activeArcLift;
-        private PlayerStance activePoundStance = PlayerStance.Medium;
+        private PlayerStance activeActionStance = PlayerStance.Medium;
         private DribbleAction activeAction = DribbleAction.Pound;
         private BallHand activeSourceHand;
         private BallHand activeTargetHand;
@@ -108,7 +126,7 @@ namespace BounceTheory
         private bool hasPendingInput;
         private ContactTimingPlan pendingContactPlan;
         private DribbleAction pendingAction = DribbleAction.Pound;
-        private PlayerStance pendingPoundStance = PlayerStance.Medium;
+        private PlayerStance pendingActionStance = PlayerStance.Medium;
         private bool pendingUsesSimulatedTime;
         private double lastTargetFloorContactDsp;
         private double lastActualFloorContactDsp;
@@ -159,10 +177,27 @@ namespace BounceTheory
         public float BehindBackDepthOffset => behindBackDepthOffset;
         public float StanceModifierGraceSeconds => stanceModifierGraceSeconds;
         public bool HasPendingPlainSpace => pendingPlainSpace;
-        public PlayerStance ActivePoundStance => activePoundStance;
-        public PlayerStance PendingPoundStance => pendingPoundStance;
+        public PlayerStance ActiveActionStance => activeActionStance;
+        public PlayerStance PendingActionStance => pendingActionStance;
+        public PlayerStance ActivePoundStance => activeActionStance;
+        public PlayerStance PendingPoundStance => pendingActionStance;
         public float LowPoundMidpointDrop => lowPoundMidpointDrop;
         public float HighPoundArcLift => highPoundArcLift;
+        public float CrossoverContactLateralProgress => crossoverContactLateralProgress;
+        public float LowCrossoverMidpointDrop => lowCrossoverMidpointDrop;
+        public float HighCrossoverArcLift => highCrossoverArcLift;
+        public float LowHesitationHoldReduction => lowHesitationHoldReduction;
+        public float LowHesitationLiftReduction => lowHesitationLiftReduction;
+        public float HighHesitationHoldAddition => highHesitationHoldAddition;
+        public float HighHesitationLiftAddition => highHesitationLiftAddition;
+        public float BehindBackContactLateralProgress => behindBackContactLateralProgress;
+        public float BehindBackWrapDepth => behindBackWrapDepth;
+        public float LowBehindBackDepthReduction => lowBehindBackDepthReduction;
+        public float LowBehindBackWrapReduction => lowBehindBackWrapReduction;
+        public float LowBehindBackMidpointDrop => lowBehindBackMidpointDrop;
+        public float HighBehindBackDepthAddition => highBehindBackDepthAddition;
+        public float HighBehindBackWrapAddition => highBehindBackWrapAddition;
+        public float HighBehindBackArcLift => highBehindBackArcLift;
 
         public event Action<BallHand> DribbleStarted;
         public event Action<BallHand> FloorContactReached;
@@ -193,6 +228,18 @@ namespace BounceTheory
             behindBackWrapDepth = Mathf.Max(0f, behindBackWrapDepth);
             lowPoundMidpointDrop = Mathf.Max(0f, lowPoundMidpointDrop);
             highPoundArcLift = Mathf.Max(0f, highPoundArcLift);
+            lowCrossoverMidpointDrop = Mathf.Max(0f, lowCrossoverMidpointDrop);
+            highCrossoverArcLift = Mathf.Max(0f, highCrossoverArcLift);
+            lowHesitationHoldReduction = Mathf.Clamp(lowHesitationHoldReduction, 0f, hesitationHoldFraction - .15f);
+            lowHesitationLiftReduction = Mathf.Clamp(lowHesitationLiftReduction, 0f, hesitationLift);
+            highHesitationHoldAddition = Mathf.Clamp(highHesitationHoldAddition, 0f, .6f - hesitationHoldFraction);
+            highHesitationLiftAddition = Mathf.Max(0f, highHesitationLiftAddition);
+            lowBehindBackDepthReduction = Mathf.Clamp(lowBehindBackDepthReduction, 0f, behindBackDepthOffset - .1f);
+            lowBehindBackWrapReduction = Mathf.Clamp(lowBehindBackWrapReduction, 0f, behindBackWrapDepth);
+            lowBehindBackMidpointDrop = Mathf.Max(0f, lowBehindBackMidpointDrop);
+            highBehindBackDepthAddition = Mathf.Max(0f, highBehindBackDepthAddition);
+            highBehindBackWrapAddition = Mathf.Max(0f, highBehindBackWrapAddition);
+            highBehindBackArcLift = Mathf.Max(0f, highBehindBackArcLift);
             stanceModifierGraceSeconds = Mathf.Max(0f, stanceModifierGraceSeconds);
             SyncAnchorHeights();
             if (!Application.isPlaying)
@@ -255,7 +302,9 @@ namespace BounceTheory
 
                 if (!actionAccepted)
                 {
-                    actionAccepted = ProcessCrossoverInput(leftCrossoverPressed, rightCrossoverPressed);
+                    PlayerStance acceptedCrossoverStance = stanceModifierActive ? PlayerStance.Low : currentStance;
+                    actionAccepted = ProcessCrossoverInput(leftCrossoverPressed, rightCrossoverPressed,
+                        acceptedCrossoverStance);
                     if (actionAccepted && stanceModifierActive)
                     {
                         SetStance(PlayerStance.Low);
@@ -265,7 +314,9 @@ namespace BounceTheory
 
                 if (!actionAccepted)
                 {
-                    actionAccepted = ProcessHesitationInput(leftHesitationPressed, rightHesitationPressed);
+                    PlayerStance acceptedHesitationStance = stanceModifierActive ? PlayerStance.High : currentStance;
+                    actionAccepted = ProcessHesitationInput(leftHesitationPressed, rightHesitationPressed,
+                        acceptedHesitationStance);
                     if (actionAccepted && stanceModifierActive)
                     {
                         SetStance(PlayerStance.High);
@@ -308,11 +359,17 @@ namespace BounceTheory
 
         public bool ProcessCrossoverInput(bool leftToRightPressed, bool rightToLeftPressed)
         {
+            return ProcessCrossoverInput(leftToRightPressed, rightToLeftPressed, currentStance);
+        }
+
+        private bool ProcessCrossoverInput(bool leftToRightPressed, bool rightToLeftPressed,
+            PlayerStance acceptedStance)
+        {
             if (!TryIdentifyActiveInput(leftToRightPressed, rightToLeftPressed)) return false;
             double dsp = AudioSettings.dspTime;
             double elapsed = rhythmClock != null ? rhythmClock.ElapsedSecondsAtDspTime(dsp) : 0;
             ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, false);
-            return DecideInput(DribbleAction.Crossover, plan, false, currentStance);
+            return DecideInput(DribbleAction.Crossover, plan, false, acceptedStance);
         }
 
         public bool ProcessCrossoverInputAtRhythmTime(bool leftToRightPressed, bool rightToLeftPressed, double elapsed)
@@ -330,11 +387,16 @@ namespace BounceTheory
 
         public bool ProcessHesitationInput(bool leftPressed, bool rightPressed)
         {
+            return ProcessHesitationInput(leftPressed, rightPressed, currentStance);
+        }
+
+        private bool ProcessHesitationInput(bool leftPressed, bool rightPressed, PlayerStance acceptedStance)
+        {
             if (!TryIdentifyActiveInput(leftPressed, rightPressed)) return false;
             double dsp = AudioSettings.dspTime;
             double elapsed = rhythmClock != null ? rhythmClock.ElapsedSecondsAtDspTime(dsp) : 0;
             ContactTimingPlan plan = CreateContactPlan(elapsed, dsp, false);
-            return DecideInput(DribbleAction.Hesitation, plan, false, currentStance);
+            return DecideInput(DribbleAction.Hesitation, plan, false, acceptedStance);
         }
 
         public bool ProcessHesitationInputAtRhythmTime(bool leftPressed, bool rightPressed, double elapsed)
@@ -392,7 +454,7 @@ namespace BounceTheory
                         ? EvaluateBehindBackDescent(shaped)
                         : activeAction == DribbleAction.Pound
                             ? EvaluatePoundDescent(shaped)
-                            : Vector3.Lerp(activeMotionStartPosition, floorPosition, shaped);
+                            : EvaluateCrossoverDescent(shaped);
                 if (activeAction != DribbleAction.Hesitation && activeArcLift > 0f)
                     descentPosition.y += Mathf.Sin(shaped * Mathf.PI) * activeArcLift;
                 transform.position = ApplyMotionShape(descentPosition, t);
@@ -469,7 +531,7 @@ namespace BounceTheory
             nextExtremeFromMedium = PlayerStance.Low;
             activeContactPlan = default;
             activeAction = DribbleAction.Pound;
-            activePoundStance = PlayerStance.Medium;
+            activeActionStance = PlayerStance.Medium;
             activeSourceHand = currentHand;
             activeTargetHand = currentHand;
             motionMode = BounceMotionMode.Normal;
@@ -545,7 +607,7 @@ namespace BounceTheory
         }
 
         private bool DecideInput(DribbleAction action, ContactTimingPlan plan, bool simulated,
-            PlayerStance acceptedPoundStance)
+            PlayerStance acceptedStance)
         {
             TimingJudgment judgment = plan.Judgment;
             lastTimingJudgment = judgment;
@@ -555,7 +617,7 @@ namespace BounceTheory
             if (logicalPhase == BallLogicalPhase.Controlled || logicalPhase == BallLogicalPhase.Returning)
             {
                 BallLogicalPhase sourcePhase = logicalPhase;
-                if (!BeginDribble(action, plan, simulated, acceptedPoundStance)) return false;
+                if (!BeginDribble(action, plan, simulated, acceptedStance)) return false;
                 lastInputDecision = $"Accepted {action} from {sourcePhase}; contact scheduled on the global grid.";
                 return true;
             }
@@ -564,7 +626,7 @@ namespace BounceTheory
                 hasPendingInput = true;
                 pendingContactPlan = plan;
                 pendingAction = action;
-                pendingPoundStance = acceptedPoundStance;
+                pendingActionStance = acceptedStance;
                 pendingUsesSimulatedTime = simulated;
                 lastInputDecision = $"Accepted {action} and queued during {logicalPhase}; contact target preserved.";
                 Log($"{action} follow-up queued — target DSP {plan.TargetContactDspTimestamp:0.000000}, {RhythmicIntervalCatalog.Label(plan.Interval)}");
@@ -577,7 +639,7 @@ namespace BounceTheory
         }
 
         private bool BeginDribble(DribbleAction action, ContactTimingPlan plan, bool simulated,
-            PlayerStance acceptedPoundStance)
+            PlayerStance acceptedStance)
         {
             BallHand sourceHand = currentHand;
             bool transfersHand = action == DribbleAction.Crossover || action == DribbleAction.BehindTheBack;
@@ -605,22 +667,21 @@ namespace BounceTheory
             else if (action == DribbleAction.BehindTheBack)
             {
                 Vector3 lateralContact = Vector3.Lerp(sourceAnchor.position, targetAnchor.position, behindBackContactLateralProgress);
-                targetPosition = new Vector3(lateralContact.x, floorHeight, lateralContact.z - behindBackDepthOffset);
+                targetPosition = new Vector3(lateralContact.x, floorHeight,
+                    lateralContact.z - BehindBackDepthFor(acceptedStance));
             }
             else
             {
                 targetPosition = new Vector3(startPosition.x, floorHeight, startPosition.z);
             }
             activeArcLift = startPosition.y < minimumFastBounceHeight ? minimumFastBounceHeight - startPosition.y : 0f;
-            float actionLift = action == DribbleAction.Hesitation ? hesitationLift : 0f;
-            float pathDepth = action == DribbleAction.BehindTheBack ? behindBackWrapDepth : 0f;
-            float poundLift = action == DribbleAction.Pound && acceptedPoundStance == PlayerStance.High
-                ? highPoundArcLift
-                : 0f;
+            float actionLift = action == DribbleAction.Hesitation ? HesitationLiftFor(acceptedStance) : 0f;
+            float pathDepth = action == DribbleAction.BehindTheBack ? BehindBackWrapFor(acceptedStance) : 0f;
+            float stanceVerticalExcursion = StanceVerticalExcursionFor(action, acceptedStance);
             float requiredDistance = Vector3.Distance(startPosition, targetPosition) +
-                                     (activeArcLift + actionLift + pathDepth + poundLift) * 2f;
+                                     (activeArcLift + actionLift + pathDepth + stanceVerticalExcursion) * 2f;
             double movementTime = action == DribbleAction.Hesitation
-                ? remaining * Math.Max(.1, 1.0 - hesitationHoldFraction * .5)
+                ? remaining * Math.Max(.1, 1.0 - HesitationHoldFractionFor(acceptedStance) * .5)
                 : remaining;
             if (remaining < minimumReadableContactApproachTime || requiredDistance / Math.Max(.001, movementTime) > maximumDescentSpeed)
             {
@@ -635,7 +696,7 @@ namespace BounceTheory
             activeContactPlan = plan;
             activeUsesSimulatedTime = simulated;
             activeAction = action;
-            if (action == DribbleAction.Pound) activePoundStance = acceptedPoundStance;
+            activeActionStance = acceptedStance;
             activeSourceHand = sourceHand;
             activeTargetHand = targetHand;
             motionMode = remaining < ReferenceDescentDuration * .9 || startPosition.y < minimumFastBounceHeight
@@ -651,8 +712,7 @@ namespace BounceTheory
             logicalPhase = BallLogicalPhase.Descending;
             SetContactIndicator(false);
             DribbleStarted?.Invoke(activeSourceHand);
-            string poundProfile = action == DribbleAction.Pound ? $", stance profile {activePoundStance}" : string.Empty;
-            Log($"{action} began — input DSP {plan.InputDspTimestamp:0.000000}, target contact DSP {plan.TargetContactDspTimestamp:0.000000}, mode {motionMode}{poundProfile}");
+            Log($"{action} began — input DSP {plan.InputDspTimestamp:0.000000}, target contact DSP {plan.TargetContactDspTimestamp:0.000000}, mode {motionMode}, stance profile {activeActionStance}");
             return true;
         }
 
@@ -684,18 +744,30 @@ namespace BounceTheory
         {
             Vector3 position = Vector3.Lerp(activeMotionStartPosition, floorPosition, progress);
             float profileWeight = Mathf.Sin(Mathf.Clamp01(progress) * Mathf.PI);
-            if (activePoundStance == PlayerStance.Low)
+            if (activeActionStance == PlayerStance.Low)
                 position.y -= profileWeight * lowPoundMidpointDrop;
-            else if (activePoundStance == PlayerStance.High)
+            else if (activeActionStance == PlayerStance.High)
                 position.y += profileWeight * highPoundArcLift;
+            return position;
+        }
+
+        private Vector3 EvaluateCrossoverDescent(float progress)
+        {
+            Vector3 position = Vector3.Lerp(activeMotionStartPosition, floorPosition, progress);
+            float profileWeight = Mathf.Sin(Mathf.Clamp01(progress) * Mathf.PI);
+            if (activeActionStance == PlayerStance.Low)
+                position.y -= profileWeight * lowCrossoverMidpointDrop;
+            else if (activeActionStance == PlayerStance.High)
+                position.y += profileWeight * highCrossoverArcLift;
             return position;
         }
 
         private Vector3 EvaluateHesitationDescent(float elapsedFraction)
         {
-            float holdEnd = Mathf.Clamp(hesitationHoldFraction, .15f, .6f);
+            float holdEnd = HesitationHoldFractionFor(activeActionStance);
             float liftEnd = holdEnd * .5f;
-            Vector3 heldPosition = activeMotionStartPosition + Vector3.up * (hesitationLift + activeArcLift);
+            Vector3 heldPosition = activeMotionStartPosition +
+                                   Vector3.up * (HesitationLiftFor(activeActionStance) + activeArcLift);
             if (elapsedFraction < liftEnd)
                 return Vector3.Lerp(activeMotionStartPosition, heldPosition, Smooth(elapsedFraction / Mathf.Max(.001f, liftEnd)));
             if (elapsedFraction < holdEnd) return heldPosition;
@@ -710,9 +782,61 @@ namespace BounceTheory
         private Vector3 EvaluateBehindBackDescent(float progress)
         {
             Vector3 control = Vector3.Lerp(activeMotionStartPosition, floorPosition, .5f);
-            control.z = Mathf.Min(activeMotionStartPosition.z, floorPosition.z) - behindBackWrapDepth;
+            control.z = Mathf.Min(activeMotionStartPosition.z, floorPosition.z) -
+                        BehindBackWrapFor(activeActionStance);
+            if (activeActionStance == PlayerStance.Low)
+                control.y -= lowBehindBackMidpointDrop * 2f;
+            else if (activeActionStance == PlayerStance.High)
+                control.y += highBehindBackArcLift * 2f;
             float inverse = 1f - progress;
             return inverse * inverse * activeMotionStartPosition + 2f * inverse * progress * control + progress * progress * floorPosition;
+        }
+
+        private float HesitationHoldFractionFor(PlayerStance stance)
+        {
+            if (stance == PlayerStance.Low)
+                return Mathf.Clamp(hesitationHoldFraction - lowHesitationHoldReduction, .15f, .6f);
+            if (stance == PlayerStance.High)
+                return Mathf.Clamp(hesitationHoldFraction + highHesitationHoldAddition, .15f, .6f);
+            return hesitationHoldFraction;
+        }
+
+        private float HesitationLiftFor(PlayerStance stance)
+        {
+            if (stance == PlayerStance.Low)
+                return Mathf.Max(0f, hesitationLift - lowHesitationLiftReduction);
+            if (stance == PlayerStance.High)
+                return hesitationLift + highHesitationLiftAddition;
+            return hesitationLift;
+        }
+
+        private float BehindBackDepthFor(PlayerStance stance)
+        {
+            if (stance == PlayerStance.Low)
+                return Mathf.Max(.1f, behindBackDepthOffset - lowBehindBackDepthReduction);
+            if (stance == PlayerStance.High)
+                return behindBackDepthOffset + highBehindBackDepthAddition;
+            return behindBackDepthOffset;
+        }
+
+        private float BehindBackWrapFor(PlayerStance stance)
+        {
+            if (stance == PlayerStance.Low)
+                return Mathf.Max(0f, behindBackWrapDepth - lowBehindBackWrapReduction);
+            if (stance == PlayerStance.High)
+                return behindBackWrapDepth + highBehindBackWrapAddition;
+            return behindBackWrapDepth;
+        }
+
+        private float StanceVerticalExcursionFor(DribbleAction action, PlayerStance stance)
+        {
+            if (action == DribbleAction.Pound)
+                return stance == PlayerStance.High ? highPoundArcLift : stance == PlayerStance.Low ? lowPoundMidpointDrop : 0f;
+            if (action == DribbleAction.Crossover)
+                return stance == PlayerStance.High ? highCrossoverArcLift : stance == PlayerStance.Low ? lowCrossoverMidpointDrop : 0f;
+            if (action == DribbleAction.BehindTheBack)
+                return stance == PlayerStance.High ? highBehindBackArcLift : stance == PlayerStance.Low ? lowBehindBackMidpointDrop : 0f;
+            return 0f;
         }
 
         private void EnterFloorContact(double actualDsp)
@@ -784,10 +908,10 @@ namespace BounceTheory
             if (!hasPendingInput) return false;
             ContactTimingPlan plan = pendingContactPlan;
             DribbleAction action = pendingAction;
-            PlayerStance poundStance = pendingPoundStance;
+            PlayerStance acceptedStance = pendingActionStance;
             bool simulated = pendingUsesSimulatedTime;
             ClearPendingInput();
-            if (BeginDribble(action, plan, simulated, poundStance))
+            if (BeginDribble(action, plan, simulated, acceptedStance))
             {
                 lastInputDecision = "Queued input executing without rejudgment; original contact target preserved.";
                 return true;
@@ -800,7 +924,7 @@ namespace BounceTheory
             hasPendingInput = false;
             pendingContactPlan = default;
             pendingAction = DribbleAction.Pound;
-            pendingPoundStance = PlayerStance.Medium;
+            pendingActionStance = PlayerStance.Medium;
             pendingUsesSimulatedTime = false;
         }
 
@@ -838,14 +962,13 @@ namespace BounceTheory
             string error = lastTimingJudgment.IsValid ? $"{lastTimingJudgment.ErrorMilliseconds:+0.0;-0.0;0.0} ms" : "—";
             string direction = lastTimingJudgment.IsValid ? lastTimingJudgment.Direction.ToString() : "—";
             string interval = lastTimingJudgment.HasRhythmicInterval ? RhythmicIntervalCatalog.Label(lastTimingJudgment.Interval) : "Global beat / first input";
-            string poundProfile = activeAction == DribbleAction.Pound ? activePoundStance.ToString() : "—";
-            GUI.Label(new Rect(32, 133, width - 24, 22), $"Selected interval: {interval}   Motion: {motionMode}   Pound profile: {poundProfile}");
+            GUI.Label(new Rect(32, 133, width - 24, 22), $"Selected interval: {interval}   Motion: {motionMode}   Action profile: {activeActionStance}");
             GUI.Label(new Rect(32, 155, width - 24, 22), $"Input timing: {result}   Error: {error}   Direction: {direction}");
             GUI.Label(new Rect(32, 177, width - 24, 22), $"Keypress DSP: {(activeContactPlan.InputDspTimestamp > 0 ? activeContactPlan.InputDspTimestamp.ToString("0.000000") : "—")}");
             GUI.Label(new Rect(32, 199, width - 24, 22), $"Target floor-contact DSP: {(activeContactPlan.TargetContactDspTimestamp > 0 ? activeContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}");
             GUI.Label(new Rect(32, 221, width - 24, 22), $"Actual floor-contact DSP: {(lastActualFloorContactDsp > 0 ? lastActualFloorContactDsp.ToString("0.000000") : "—")}");
             GUI.Label(new Rect(32, 243, width - 24, 22), $"Contact error: {(lastActualFloorContactDsp > 0 ? lastContactErrorMilliseconds.ToString("+0.0;-0.0;0.0") + " ms" : "—")}");
-            GUI.Label(new Rect(32, 265, width - 24, 22), $"Pending input: {(hasPendingInput ? pendingAction.ToString() : "No")}");
+            GUI.Label(new Rect(32, 265, width - 24, 22), $"Pending input: {(hasPendingInput ? pendingAction + " / " + pendingActionStance : "No")}");
             GUI.Label(new Rect(32, 287, width - 24, 22), $"Pending keypress DSP: {(hasPendingInput ? pendingContactPlan.InputDspTimestamp.ToString("0.000000") : "—")}");
             GUI.Label(new Rect(32, 309, width - 24, 22), $"Pending target DSP: {(hasPendingInput ? pendingContactPlan.TargetContactDspTimestamp.ToString("0.000000") : "—")}   Interval: {(hasPendingInput ? RhythmicIntervalCatalog.Label(pendingContactPlan.Interval) : "—")}");
             GUI.Label(new Rect(32, 331, width - 24, 42), $"Last decision/failure: {lastInputDecision}");
