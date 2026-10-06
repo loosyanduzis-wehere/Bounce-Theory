@@ -53,3 +53,10 @@
 - After the latest target derived from the previous floor-contact reference has passed, the current planner can return a target in the past; `BeginDribble` then reports the target as unreachable. Because no new floor event is registered, repeated continuation attempts can remain stuck on the same expired reference.
 - The next feature should convert this dead continuation boundary into an explicit prototype possession end state and provide a restart path that resets ball/stance/transient input state and rhythm event history.
 - Exact final basketball meaning of this boundary remains open; do not hard-code it as permanent travel, double-dribble, mishandle, or gather semantics yet.
+
+
+## Stance Milestone Acceptance
+
+- BT-ST-03 user Play Mode verification was accepted on **2026-10-06**.
+- Milestone 3 — Stance is now **PROTOTYPE COMPLETE**.
+- Remaining stance/rhythm, stance/exposure, final animation, and exact feel tuning are deferred until the systems they interact with exist.
