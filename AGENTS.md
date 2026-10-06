@@ -14,6 +14,16 @@ Read it when a task depends on game rules, mechanics, design intent, or unresolv
 
 Do **not** modify the source-of-truth file unless the user explicitly asks for a design-document update.
 
+## Context Authority
+
+Repository files are authoritative for this project.
+
+- Treat prior chat summaries, remembered details, and conversation history as navigation aids only.
+- If chat context conflicts with the repository, the repository wins.
+- A fresh conversation should reconstruct project state from `AGENTS.md` and the relevant `Docs/` files instead of relying on old chat context.
+- Do not copy large conversation summaries into project files. Classify durable information into the correct file role instead.
+- When current implementation truth is needed, inspect the actual branch/code in addition to the documentation.
+
 ## Project Documentation
 
 Use these files for their specific roles:
