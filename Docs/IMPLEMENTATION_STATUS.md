@@ -1,7 +1,7 @@
 # Bounce Theory — Implementation Status
 
 **Status:** Active prototype  
-**Completed milestone:** Ball Control Language — core vocabulary  
+**Completed milestone:** Stance — prototype complete  
 **Next planned milestone:** Dribble State / Possession Foundation  
 **Current task:** `BT-DS-01 — Possession Lifecycle + Contextual Follow-Up Foundation`  
 **Git repository:** Configured  
