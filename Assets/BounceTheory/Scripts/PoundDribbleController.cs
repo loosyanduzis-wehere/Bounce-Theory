@@ -1022,8 +1022,9 @@ namespace BounceTheory
 
         private void OnGUI()
         {
-            if (!showDebugOverlay) return;
-            const float width = 540f;
+            if (showDebugOverlay)
+            {
+                const float width = 540f;
             GUI.Box(new Rect(18, 18, width, 480), "Bounce Theory — Target Contact / Rhythm Debug");
             GUI.Label(new Rect(32, 45, width - 24, 22), $"Possession: {possessionState}   End reason: {possessionEndReason}");
             GUI.Label(new Rect(32, 67, width - 24, 22), $"Current hand: {currentHand}   Stance: {currentStance}   Action: {activeAction}   Phase: {logicalPhase}");
@@ -1053,7 +1054,8 @@ namespace BounceTheory
                 : "Inputs: Up pound / Left cross / Right hesi / Down behind-back / Space stance");
             GUI.Label(new Rect(32, 419, width - 24, 22), $"Stance modifier grace: {stanceModifierGraceSeconds * 1000f:0} ms   Pending Space: {(pendingPlainSpace ? "Yes" : "No")}");
             GUI.Label(new Rect(32, 441, width - 24, 22), $"Previous resolved action: {(hasPreviousAction ? previousAction.ToString() : "None")}   R = restart");
-            GUI.Label(new Rect(32, 463, width - 24, 22), "Impact sound fires only at measured FloorContact.");
+                GUI.Label(new Rect(32, 463, width - 24, 22), "Impact sound fires only at measured FloorContact.");
+            }
 
             if (possessionState == PossessionState.Ended)
             {
