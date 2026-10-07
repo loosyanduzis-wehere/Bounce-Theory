@@ -298,6 +298,57 @@ namespace BounceTheory.Editor
             Debug.Log("BT-ST-01 prototype stance visual added without moving the player root, defender, camera, or ball anchors.");
         }
 
+        [MenuItem("Bounce Theory/Upgrade Prototype Scene To BT-DF-01 Defender Lean Recovery")]
+        public static void UpgradeDefenderLeanRecovery()
+        {
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            GameObject offense = GameObject.Find("OffensivePlayer");
+            GameObject defender = GameObject.Find("Defender");
+            GameObject ball = GameObject.Find("Basketball");
+            GameObject cameraObject = GameObject.Find("Main Camera");
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            if (!offense || !defender || !ball || !cameraObject || !controller)
+                throw new InvalidOperationException("The prototype scene is incomplete; cannot add BT-DF-01 defender behavior.");
+
+            Vector3 offensePosition = offense.transform.position;
+            Vector3 defenderPosition = defender.transform.position;
+            Vector3 cameraPosition = cameraObject.transform.position;
+            Quaternion cameraRotation = cameraObject.transform.rotation;
+
+            Transform visualRoot = defender.transform.Find("DefenderReactionVisual");
+            if (!visualRoot)
+            {
+                visualRoot = Group("DefenderReactionVisual", defender.transform);
+                string[] visualParts =
+                {
+                    "Torso", "Head", "LeftLeg", "RightLeg", "LeftArm", "RightArm"
+                };
+                foreach (string partName in visualParts)
+                {
+                    Transform part = defender.transform.Find(partName);
+                    if (part) part.SetParent(visualRoot, true);
+                }
+            }
+
+            PrototypeDefenderController defenderController = defender.GetComponent<PrototypeDefenderController>();
+            if (!defenderController) defenderController = defender.AddComponent<PrototypeDefenderController>();
+            defenderController.Configure(controller, visualRoot);
+            EditorUtility.SetDirty(defenderController);
+            EditorUtility.SetDirty(defender);
+
+            AssertUnchanged("OffensivePlayer position", offensePosition, offense.transform.position);
+            AssertUnchanged("Defender position", defenderPosition, defender.transform.position);
+            AssertUnchanged("Main Camera position", cameraPosition, cameraObject.transform.position);
+            if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                throw new InvalidOperationException("BT-DF-01 upgrade changed the Main Camera rotation.");
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+                throw new InvalidOperationException("Could not save " + ScenePath);
+            AssetDatabase.SaveAssets();
+            Debug.Log("BT-DF-01 defender lean/recovery upgrade applied without moving offense, defender root, or camera.");
+        }
+
         [MenuItem("Bounce Theory/Validate Chunk 1 Prototype Scene")]
         public static void ValidateScene()
         {
@@ -1575,6 +1626,158 @@ namespace BounceTheory.Editor
                 default:
                     return controller.ProcessInputAtRhythmTime(left, right, elapsed);
             }
+        }
+
+        [MenuItem("Bounce Theory/Validate BT-DF-01 Defender Lean Recovery")]
+        public static void ValidateDefenderLeanRecovery()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var errors = new List<string>();
+            GameObject offense = Required("OffensivePlayer", errors);
+            GameObject defender = Required("Defender", errors);
+            GameObject ball = Required("Basketball", errors);
+            GameObject cameraObject = Required("Main Camera", errors);
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            PrototypeDefenderController defenderController =
+                defender ? defender.GetComponent<PrototypeDefenderController>() : null;
+            Transform visualRoot = defender ? defender.transform.Find("DefenderReactionVisual") : null;
+
+            if (!clock) errors.Add("Reusable RhythmClock is missing.");
+            if (!controller) errors.Add("PoundDribbleController is missing.");
+            if (!defenderController) errors.Add("PrototypeDefenderController is missing; run the BT-DF-01 scene upgrade.");
+            if (!visualRoot) errors.Add("DefenderReactionVisual is missing; run the BT-DF-01 scene upgrade.");
+            if (UnityEngine.Object.FindAnyObjectByType<Rigidbody>()) errors.Add("A Rigidbody was introduced.");
+            if (UnityEngine.Object.FindAnyObjectByType<CharacterController>()) errors.Add("A CharacterController was introduced.");
+
+            if (clock && controller && defenderController && visualRoot && offense && defender && cameraObject)
+            {
+                Vector3 offensePosition = offense.transform.position;
+                Vector3 defenderPosition = defender.transform.position;
+                Vector3 cameraPosition = cameraObject.transform.position;
+                Quaternion cameraRotation = cameraObject.transform.rotation;
+                BallHand originalStartingHand = controller.StartingHand;
+
+                defenderController.Configure(controller, visualRoot);
+                controller.SetStartingHand(BallHand.Left);
+                controller.RestartPossession();
+
+                if (defenderController.CurrentState != DefenderState.Centered)
+                    errors.Add("Defender did not begin Centered after restart.");
+
+                float secure = defenderController.RecoveryDurationFor(BallControlQuality.Secure);
+                float recovering = defenderController.RecoveryDurationFor(BallControlQuality.Recovering);
+                float exposed = defenderController.RecoveryDurationFor(BallControlQuality.Exposed);
+                if (!(secure > recovering && recovering > exposed))
+                    errors.Add($"Recovery durations are not ordered Secure > Recovering > Exposed ({secure:0.00}, {recovering:0.00}, {exposed:0.00}).");
+
+                Vector3 neutralVisualPosition = visualRoot.localPosition;
+                double firstInput = FirstPerfectInputElapsed(clock, controller);
+                if (!controller.ProcessInputAtRhythmTime(true, false, firstInput))
+                    errors.Add("Left-source pound was not accepted for defender lean validation.");
+                if (defenderController.CurrentState != DefenderState.LeaningLeft)
+                    errors.Add("Left-source action did not put defender in LeaningLeft.");
+                defenderController.Tick(.10f);
+                if (visualRoot.localPosition.x >= neutralVisualPosition.x - .001f)
+                    errors.Add("LeaningLeft did not visibly shift the defender visual left.");
+                CompleteCurrentDribble(controller, errors);
+                defenderController.Tick(.05f);
+                if (defenderController.CurrentState != DefenderState.Centered)
+                    errors.Add("Same-hand action did not return defender to Centered after ball return.");
+
+                controller.SetStartingHand(BallHand.Right);
+                controller.RestartPossession();
+                firstInput = FirstPerfectInputElapsed(clock, controller);
+                if (!controller.ProcessInputAtRhythmTime(false, true, firstInput))
+                    errors.Add("Right-source pound was not accepted for defender lean validation.");
+                if (defenderController.CurrentState != DefenderState.LeaningRight)
+                    errors.Add("Right-source action did not put defender in LeaningRight.");
+                defenderController.Tick(.10f);
+                if (visualRoot.localPosition.x <= neutralVisualPosition.x + .001f)
+                    errors.Add("LeaningRight did not visibly shift the defender visual right.");
+                CompleteCurrentDribble(controller, errors);
+
+                controller.SetStartingHand(BallHand.Left);
+                controller.RestartPossession();
+                firstInput = FirstPerfectInputElapsed(clock, controller);
+                int dribblesBefore = controller.CompletedDribbleCount;
+                if (!controller.ProcessCrossoverInputAtRhythmTime(true, false, firstInput))
+                {
+                    errors.Add("Crossover was not accepted for defender recovery validation.");
+                }
+                else
+                {
+                    if (defenderController.CurrentState != DefenderState.LeaningLeft)
+                        errors.Add("Crossover source presentation did not create LeaningLeft before transfer.");
+
+                    for (int i = 0; i < 500 && controller.CompletedDribbleCount == dribblesBefore; i++)
+                    {
+                        controller.Tick(.005f);
+                        defenderController.Tick(.005f);
+                    }
+
+                    if (defenderController.CurrentState != DefenderState.Recovering)
+                        errors.Add("Resolved crossover did not put defender into Recovering.");
+                    if (Math.Abs(defenderController.RecoveryDuration - secure) > .001f)
+                        errors.Add("Perfect/Secure crossover did not use the Secure recovery duration.");
+
+                    float durationBeforeHesitation = defenderController.RecoveryDuration;
+                    double hesitationInput =
+                        clock.ElapsedSecondsAtDspTime(controller.LastActualFloorContactDsp) +
+                        controller.ActiveContactHold + .04;
+                    if (!controller.ProcessHesitationInputAtRhythmTime(false, true, hesitationInput))
+                    {
+                        errors.Add("Hesitation was not accepted during defender recovery.");
+                    }
+                    else
+                    {
+                        for (int i = 0; i < 500 &&
+                             controller.ActiveAction != DribbleAction.Hesitation; i++)
+                        {
+                            controller.Tick(.005f);
+                            defenderController.Tick(.005f);
+                        }
+
+                        if (controller.ActiveAction != DribbleAction.Hesitation)
+                            errors.Add("Accepted hesitation did not begin while defender recovery was active.");
+                        else if (defenderController.RecoveryDuration <= durationBeforeHesitation)
+                            errors.Add("Hesitation during Recovering did not extend defender recovery.");
+                    }
+
+                    defenderController.Tick(defenderController.RecoveryRemaining + .05f);
+                    if (defenderController.CurrentState != DefenderState.Centered)
+                        errors.Add("Defender did not return to Centered after recovery completed.");
+                }
+
+                // Restart must always clear defender reaction state.
+                controller.SetStartingHand(BallHand.Left);
+                controller.RestartPossession();
+                firstInput = FirstPerfectInputElapsed(clock, controller);
+                if (controller.ProcessCrossoverInputAtRhythmTime(true, false, firstInput))
+                {
+                    defenderController.Tick(.08f);
+                    controller.RestartPossession();
+                    if (defenderController.CurrentState != DefenderState.Centered)
+                        errors.Add("Possession restart did not reset defender to Centered.");
+                    if (Vector3.Distance(visualRoot.localPosition, neutralVisualPosition) > .001f)
+                        errors.Add("Possession restart did not restore the neutral defender visual position.");
+                }
+
+                controller.SetStartingHand(originalStartingHand);
+                controller.RestartPossession();
+
+                AssertStill("OffensivePlayer", offensePosition, offense.transform.position, errors);
+                AssertStill("Defender", defenderPosition, defender.transform.position, errors);
+                AssertStill("Main Camera", cameraPosition, cameraObject.transform.position, errors);
+                if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                    errors.Add("Main Camera rotation changed during defender validation.");
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException("BT-DF-01 validation failed:\n- " + string.Join("\n- ", errors));
+
+            Debug.Log("BT-DF-01 validation passed: defender starts Centered; left/right source actions create readable lean states; transfer resolution creates timing-quality-dependent Recovering; hesitation extends active recovery; recovery and possession restart return Centered; defender root, offense, and camera remain stationary.");
         }
 
         public static void CapturePreview()
