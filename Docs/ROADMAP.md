@@ -98,14 +98,15 @@ Deferred until interacting systems exist:
 
 **Status:** IN PROGRESS
 
-Current feature:
+Completed:
 
 - `BT-DF-01 — Defender Lean + Recovery Foundation`
   - Centered
   - Leaning left / right
   - Recovering
   - timing-quality-dependent recovery
-  - hesitation extends active recovery
+  - command-time hesitation recovery extension
+  - user Play Mode accepted 2026-10-07
 
 Current parallel implementation chunk:
 
@@ -123,7 +124,7 @@ Intended prototype defender progression:
 
 `Lean / Recover → Reach → Steal or Overcommit → Beaten`
 
-This work is isolated on `milestone/defender-interaction` while Codex verifies BT-DF-01 on `milestone/defender`.
+This work is isolated on `milestone/defender-interaction` on top of the verified and user-accepted BT-DF-01 foundation.
 
 ---
 
