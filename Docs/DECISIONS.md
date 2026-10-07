@@ -148,3 +148,22 @@ Follow-up relations describe sequence context without creating a fixed combo sys
 Bounce Theory actions are rhythmically independent but physically contextual. A single monolithic enum would create a combinatorial state explosion and would encourage animation-shaped state definitions.
 
 Keeping the dimensions separate lets the action-decision layer ask the relevant questions—hand, phase, stance, timing, previous move, possession, and follow-up—while preserving the existing rhythm-first input architecture.
+
+
+---
+
+## Decision 007 — Defender Reactions Consume Gameplay State, Not Animation Completion
+
+**Status:** Active
+
+### Decision
+
+Prototype defender reactions should subscribe to authoritative dribble/gameplay state and events rather than infer legality or timing from visual animation completion.
+
+The first defender feature reads the accepted dribble action, source hand, transfer resolution, and offensive control quality to select readable lean/recovery behavior.
+
+### Why
+
+Bounce Theory is rhythm-first. If defender state depended on animation completion, defender timing would quietly reintroduce visual-duration authority into the gameplay loop.
+
+Using the existing dribble-state layer keeps defender behavior aligned with the same DSP/rhythm/action-decision architecture as offense.
