@@ -28,7 +28,7 @@ Key completed task:
 
 ## Milestone 2 — Ball Control Language
 
-**Status:** IN PROGRESS — CORE VOCABULARY COMPLETE; DRIBBLE STATE AWAITING VERIFICATION
+**Status:** PROTOTYPE COMPLETE
 
 Completed:
 
@@ -36,7 +36,7 @@ Completed:
 - Basic hesitation foundation — `BT-BC-07`
 - Basic behind-the-back foundation — `BT-BC-08`
 
-Prototype dribble-state implementation — **AWAITING CODEX VERIFICATION**:
+Completed dribble-state foundation:
 
 - `BT-DS-01` — possession lifecycle and restart.
 - Explicit resolved-action sequence context.
