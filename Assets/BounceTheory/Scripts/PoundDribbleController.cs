@@ -232,6 +232,7 @@ namespace BounceTheory
         public event Action<BallHand> FloorContactReached;
         public event Action<BallHand> BallReturned;
         public event Action<TimingJudgment> TimingJudged;
+        public event Action PossessionRestarted;
 
         private void Awake() => ResetToStartingHand();
 
@@ -601,6 +602,7 @@ namespace BounceTheory
                 rhythmClock.RestartClock();
             lastInputDecision = "Possession restarted; waiting for input.";
             Log("possession restarted");
+            PossessionRestarted?.Invoke();
         }
 
         public void EndPossession(PossessionEndReason reason)
