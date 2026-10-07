@@ -10,7 +10,7 @@ namespace BounceTheory
     public enum DribbleAction { Pound, Crossover, Hesitation, BehindTheBack }
     public enum PlayerStance { Low, Medium, High }
     public enum PossessionState { Active, Ended }
-    public enum PossessionEndReason { None, ContinuationWindowExpired, Manual }
+    public enum PossessionEndReason { None, ContinuationWindowExpired, DefenderSteal, Manual }
     public enum BallControlQuality { Secure, Recovering, Exposed }
     public enum FollowUpRelation { FirstAction, Repeat, SameHandVariation, Transfer, CounterTransfer }
 
