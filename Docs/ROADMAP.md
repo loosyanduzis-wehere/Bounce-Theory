@@ -96,13 +96,19 @@ Deferred until interacting systems exist:
 
 ## Milestone 4 — Defender
 
-**Status:** PLANNED
+**Status:** IN PROGRESS
 
-Planned areas:
+Current feature:
 
-- Centered state
-- Lean
-- Recovery
+- `BT-DF-01 — Defender Lean + Recovery Foundation`
+  - Centered
+  - Leaning left / right
+  - Recovering
+  - timing-quality-dependent recovery
+  - hesitation extends active recovery
+
+Later defender work:
+
 - Reach
 - Overcommit
 - Beaten state
