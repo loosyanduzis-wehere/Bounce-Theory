@@ -356,6 +356,64 @@ namespace BounceTheory.Editor
             Debug.Log("BT-DF-02/03 defender interaction upgrade applied on top of the verified BT-DF-01 defender setup.");
         }
 
+        [MenuItem("Bounce Theory/Upgrade Prototype Scene To BT-FN-01 Core Finishes")]
+        public static void UpgradeCoreFinishes()
+        {
+            UpgradeDefenderInteraction();
+
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            GameObject offense = GameObject.Find("OffensivePlayer");
+            GameObject defender = GameObject.Find("Defender");
+            GameObject ball = GameObject.Find("Basketball");
+            GameObject cameraObject = GameObject.Find("Main Camera");
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            PoundDribbleController dribbleController = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PrototypeDefenderController defenderController =
+                defender ? defender.GetComponent<PrototypeDefenderController>() : null;
+
+            if (!offense || !defender || !ball || !cameraObject || !prototype ||
+                !dribbleController || !clock || !defenderController)
+                throw new InvalidOperationException("The prototype scene is incomplete; cannot add BT-FN-01 finishes.");
+
+            Vector3 offensePosition = offense.transform.position;
+            Vector3 defenderPosition = defender.transform.position;
+            Vector3 cameraPosition = cameraObject.transform.position;
+            Quaternion cameraRotation = cameraObject.transform.rotation;
+
+            Transform cue = offense.transform.Find("FinishTimingCue");
+            if (!cue)
+            {
+                Renderer ballRenderer = ball.GetComponent<Renderer>();
+                Material cueMaterial = ballRenderer ? ballRenderer.sharedMaterial : null;
+                cue = Primitive(PrimitiveType.Sphere, "FinishTimingCue",
+                    new Vector3(0f, 3.25f, -.10f), Vector3.one * .16f,
+                    cueMaterial, offense.transform).transform;
+            }
+
+            Collider cueCollider = cue.GetComponent<Collider>();
+            if (cueCollider) UnityEngine.Object.DestroyImmediate(cueCollider);
+            cue.gameObject.SetActive(false);
+
+            PrototypeFinishController finishController = offense.GetComponent<PrototypeFinishController>();
+            if (!finishController) finishController = offense.AddComponent<PrototypeFinishController>();
+            finishController.Configure(dribbleController, clock, defenderController, cue.gameObject);
+            EditorUtility.SetDirty(finishController);
+            EditorUtility.SetDirty(offense);
+
+            AssertUnchanged("OffensivePlayer position", offensePosition, offense.transform.position);
+            AssertUnchanged("Defender position", defenderPosition, defender.transform.position);
+            AssertUnchanged("Main Camera position", cameraPosition, cameraObject.transform.position);
+            if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                throw new InvalidOperationException("BT-FN-01 upgrade changed the Main Camera rotation.");
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+                throw new InvalidOperationException("Could not save " + ScenePath);
+            AssetDatabase.SaveAssets();
+            Debug.Log("BT-FN-01 core finishes upgrade applied: Q Shot / E Stepback / F Drive with shared-rhythm timing and defender-dependent green windows.");
+        }
+
         [MenuItem("Bounce Theory/Validate Chunk 1 Prototype Scene")]
         public static void ValidateScene()
         {
@@ -2045,6 +2103,189 @@ namespace BounceTheory.Editor
             return controller.ActiveContactPlan.TargetContactElapsedSeconds +
                    clock.SecondsPerBeat * .5 -
                    controller.ReferenceDescentDurationSeconds;
+        }
+
+        [MenuItem("Bounce Theory/Validate BT-FN-01 Core Finishes")]
+        public static void ValidateCoreFinishes()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var errors = new List<string>();
+            GameObject offense = Required("OffensivePlayer", errors);
+            GameObject defender = Required("Defender", errors);
+            GameObject ball = Required("Basketball", errors);
+            GameObject cameraObject = Required("Main Camera", errors);
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PoundDribbleController dribbleController =
+                ball ? ball.GetComponent<PoundDribbleController>() : null;
+            PrototypeDefenderController defenderController =
+                defender ? defender.GetComponent<PrototypeDefenderController>() : null;
+            PrototypeFinishController finishController =
+                offense ? offense.GetComponent<PrototypeFinishController>() : null;
+            Transform cue = offense ? offense.transform.Find("FinishTimingCue") : null;
+
+            if (!clock) errors.Add("Reusable RhythmClock is missing.");
+            if (!dribbleController) errors.Add("PoundDribbleController is missing.");
+            if (!defenderController) errors.Add("PrototypeDefenderController is missing.");
+            if (!finishController) errors.Add("PrototypeFinishController is missing; run the BT-FN-01 scene upgrade.");
+            if (!cue) errors.Add("FinishTimingCue is missing; run the BT-FN-01 scene upgrade.");
+            if (UnityEngine.Object.FindAnyObjectByType<Rigidbody>()) errors.Add("A Rigidbody was introduced.");
+            if (UnityEngine.Object.FindAnyObjectByType<CharacterController>()) errors.Add("A CharacterController was introduced.");
+
+            if (clock && dribbleController && defenderController && finishController && cue &&
+                offense && defender && cameraObject)
+            {
+                Vector3 offensePosition = offense.transform.position;
+                Vector3 defenderPosition = defender.transform.position;
+                Vector3 cameraPosition = cameraObject.transform.position;
+                Quaternion cameraRotation = cameraObject.transform.rotation;
+                BallHand originalStartingHand = dribbleController.StartingHand;
+
+                finishController.Configure(dribbleController, clock, defenderController, cue.gameObject);
+                dribbleController.SetStartingHand(BallHand.Left);
+                dribbleController.RestartPossession();
+
+                if (PrototypeFinishController.WindowTierForDefenderState(DefenderState.Beaten) !=
+                    FinishWindowTier.Wide)
+                    errors.Add("Beaten defender must create the Wide finish window.");
+                if (PrototypeFinishController.WindowTierForDefenderState(DefenderState.Recovering) !=
+                    FinishWindowTier.Medium ||
+                    PrototypeFinishController.WindowTierForDefenderState(DefenderState.Overcommitted) !=
+                    FinishWindowTier.Medium)
+                    errors.Add("Recovering/Overcommitted defender must create the Medium finish window.");
+                if (PrototypeFinishController.WindowTierForDefenderState(DefenderState.Centered) !=
+                    FinishWindowTier.Tight ||
+                    PrototypeFinishController.WindowTierForDefenderState(DefenderState.LeaningLeft) !=
+                    FinishWindowTier.Tight ||
+                    PrototypeFinishController.WindowTierForDefenderState(DefenderState.Reaching) !=
+                    FinishWindowTier.Tight)
+                    errors.Add("Centered/leaning/reaching defender must create the Tight finish window.");
+
+                if (!(finishController.WideHalfWindowMilliseconds >
+                      finishController.MediumHalfWindowMilliseconds &&
+                      finishController.MediumHalfWindowMilliseconds >
+                      finishController.TightHalfWindowMilliseconds))
+                    errors.Add("Finish windows are not ordered Wide > Medium > Tight.");
+
+                // Shot: commit from Controlled, lock dribble input, target a shared whole beat, green at target.
+                const double startElapsed = .05;
+                if (!finishController.TryStartFinishAtElapsedTime(FinishType.Shot, startElapsed))
+                {
+                    errors.Add("Shot finish was not accepted from Controlled.");
+                }
+                else
+                {
+                    if (finishController.Phase != FinishPhase.Timing ||
+                        finishController.ActiveFinish != FinishType.Shot)
+                        errors.Add("Shot did not enter Timing phase.");
+                    if (finishController.ActiveWindowTier != FinishWindowTier.Tight ||
+                        finishController.DefenderStateAtCommit != DefenderState.Centered)
+                        errors.Add("Centered defender did not produce a captured Tight shot window.");
+                    if (!dribbleController.GameplayInputSuppressed)
+                        errors.Add("Committed finish did not suppress dribble gameplay input.");
+                    if (!cue.gameObject.activeSelf)
+                        errors.Add("Finish timing cue was not visible during Timing.");
+
+                    double targetBeat = clock.BeatPositionAtDspTime(finishController.TargetDsp);
+                    if (Math.Abs(targetBeat - Math.Round(targetBeat)) > .000001)
+                        errors.Add("Finish target was not snapped to a whole beat on the shared rhythm clock.");
+
+                    if (dribbleController.ProcessInputAtRhythmTime(true, false, startElapsed + .02))
+                        errors.Add("Dribble input was accepted while a finish was committed.");
+
+                    double targetElapsed = finishController.TargetDsp - clock.StartDspTime;
+                    if (!finishController.ResolveFinishAtElapsedTime(targetElapsed))
+                        errors.Add("Shot could not resolve at its target.");
+                    if (finishController.LastOutcome != FinishOutcome.GreenMade ||
+                        dribbleController.CurrentPossessionEndReason != PossessionEndReason.FinishMade)
+                        errors.Add("On-target shot did not resolve GreenMade / FinishMade.");
+                    if (cue.gameObject.activeSelf)
+                        errors.Add("Finish timing cue remained visible after resolution.");
+                }
+
+                // Restart resets finish state and reopens gameplay.
+                dribbleController.RestartPossession();
+                if (finishController.Phase != FinishPhase.Idle ||
+                    finishController.ActiveFinish != FinishType.None ||
+                    dribbleController.GameplayInputSuppressed)
+                    errors.Add("Restart did not clear finish state/input suppression.");
+
+                // Early release misses.
+                if (finishController.TryStartFinishAtElapsedTime(FinishType.Stepback, startElapsed))
+                {
+                    double targetElapsed = finishController.TargetDsp - clock.StartDspTime;
+                    double earlyRelease = targetElapsed - finishController.GreenHalfWindowSeconds - .02;
+                    finishController.ResolveFinishAtElapsedTime(earlyRelease);
+                    if (finishController.LastOutcome != FinishOutcome.EarlyMiss ||
+                        dribbleController.CurrentPossessionEndReason != PossessionEndReason.FinishMissed)
+                        errors.Add("Early stepback release did not resolve EarlyMiss / FinishMissed.");
+                }
+                else
+                {
+                    errors.Add("Stepback finish was not accepted from Controlled.");
+                }
+
+                dribbleController.RestartPossession();
+
+                // Late release misses.
+                if (finishController.TryStartFinishAtElapsedTime(FinishType.Drive, startElapsed))
+                {
+                    double targetElapsed = finishController.TargetDsp - clock.StartDspTime;
+                    double lateRelease = targetElapsed + finishController.GreenHalfWindowSeconds + .02;
+                    finishController.ResolveFinishAtElapsedTime(lateRelease);
+                    if (finishController.LastOutcome != FinishOutcome.LateMiss ||
+                        dribbleController.CurrentPossessionEndReason != PossessionEndReason.FinishMissed)
+                        errors.Add("Late drive release did not resolve LateMiss / FinishMissed.");
+                }
+                else
+                {
+                    errors.Add("Drive finish was not accepted from Controlled.");
+                }
+
+                dribbleController.RestartPossession();
+
+                // No release after the green window auto-resolves as a late miss.
+                if (finishController.TryStartFinishAtElapsedTime(FinishType.Shot, startElapsed))
+                {
+                    double timeoutDsp = finishController.TargetDsp +
+                                        finishController.GreenHalfWindowSeconds + .02;
+                    finishController.TickAtDspTime(timeoutDsp);
+                    if (finishController.LastOutcome != FinishOutcome.LateMiss ||
+                        finishController.Phase != FinishPhase.Resolved ||
+                        dribbleController.CurrentPossessionEndReason != PossessionEndReason.FinishMissed)
+                        errors.Add("Expired finish timing window did not auto-resolve as LateMiss.");
+                }
+
+                dribbleController.RestartPossession();
+
+                // Finishes cannot begin while the ball is physically in an active dribble phase.
+                double firstInput = FirstPerfectInputElapsed(clock, dribbleController);
+                if (!dribbleController.ProcessInputAtRhythmTime(true, false, firstInput))
+                {
+                    errors.Add("Finish legality setup dribble was not accepted.");
+                }
+                else if (finishController.TryStartFinishAtElapsedTime(FinishType.Shot, firstInput + .02))
+                {
+                    errors.Add("Finish started while the ball was not Controlled.");
+                }
+                CompleteCurrentDribble(dribbleController, errors);
+                dribbleController.RestartPossession();
+
+                dribbleController.SetStartingHand(originalStartingHand);
+                dribbleController.RestartPossession();
+
+                AssertStill("OffensivePlayer", offensePosition, offense.transform.position, errors);
+                AssertStill("Defender", defenderPosition, defender.transform.position, errors);
+                AssertStill("Main Camera", cameraPosition, cameraObject.transform.position, errors);
+                if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                    errors.Add("Main Camera rotation changed during BT-FN-01 validation.");
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException("BT-FN-01 validation failed:\n- " +
+                                                    string.Join("\n- ", errors));
+
+            Debug.Log("BT-FN-01 validation passed: Shot/Stepback/Drive commit from Controlled; finish targets snap to the shared rhythm grid; defender state maps to ordered green windows; finish commit suppresses dribble input; on-target release makes, early/late/expired release misses, restart clears finish state, and existing offense/defender/camera roots remain stationary.");
         }
 
         public static void CapturePreview()
