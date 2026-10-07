@@ -102,9 +102,17 @@ Technical shape:
 - Dribble start commits the defender toward the action source-hand side unless the defender is already Recovering.
 - Crossover and behind-the-back transfer resolution at floor contact enter Recovering when ownership resolves away from the committed side.
 - Recovery duration is derived from the offense's accepted `BallControlQuality`: Secure > Recovering > Exposed.
-- A hesitation that actually begins while defender state is Recovering extends the active recovery duration.
+- A hesitation accepted while defender state is Recovering extends the active recovery duration at command time; later visual execution does not apply the extension again.
 - `PoundDribbleController.PossessionRestarted` is a new narrow integration event so restart can reset defender state without polling UI/input state.
 - The existing scene is upgraded through `Bounce Theory/Upgrade Prototype Scene To BT-DF-01 Defender Lean Recovery`; do not manually rewrite scene YAML.
 - Targeted validator: `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`.
 
 ChatGPT did not claim Unity compilation or executable validation. Codex must run the scene upgrade, compile, run the targeted validator, run the existing BT-DS-01 and representative stance/rhythm regressions, and repair clear in-scope issues before the task can move to `AWAITING PLAYTEST`.
+
+
+## BT-DF-01 Fresh-Context Verification
+
+- The consolidated review found that hesitation originally extended defender recovery when queued visual execution began, despite the task defining the accepted command as authoritative. The dribble decision path now emits a narrow accepted-action event; a hesitation accepted during recovery extends the timer immediately and does not extend it again when visuals begin.
+- The documented scene upgrade was run and serialized `PrototypeDefenderController` plus `DefenderReactionVisual` into `BounceTheoryPrototype.unity` without moving the defender root, offense, or camera.
+- `BT-DF-01 Defender Lean Recovery` and `BT-DS-01 Complete Dribble State` pass after the fix, including representative stance, dribble, queued-input, rhythm, and target-contact regressions.
+- The Unity editor C# project compiles with zero errors. Remaining warnings are the existing obsolete editor-validation API warnings.

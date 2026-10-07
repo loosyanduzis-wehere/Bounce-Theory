@@ -3,10 +3,10 @@
 **Project status:** Active prototype  
 **Current branch:** `milestone/defender`  
 **Current task:** `BT-DF-01 — Defender Lean + Recovery Foundation`  
-**Task status:** `IN PROGRESS`  
+**Task status:** `AWAITING PLAYTEST`
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
-**Last updated:** 2026-10-06
+**Last updated:** 2026-10-07
 
 > This file is the fast current handoff. Design truth belongs in `Game Design.md`; future work belongs in `ROADMAP.md`; completed history belongs in `COMPLETED_TASKS.md`; architectural rationale belongs in `DECISIONS.md`; unresolved choices belong in `OPEN_QUESTIONS.md`; technical discoveries belong in `IMPLEMENTATION_NOTES.md`.
 
@@ -27,7 +27,7 @@ The defender feature should consume the existing dribble-state context rather th
 ## Active Task — BT-DF-01
 
 **Title:** Defender Lean + Recovery Foundation  
-**Status:** IN PROGRESS
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 
@@ -158,15 +158,15 @@ Do not implement:
 
 Automated / executable:
 
-- [ ] Unity editor project compiles.
-- [ ] Scene upgrade attaches/configures the defender controller.
-- [ ] Targeted BT-DF-01 validator covers Centered/LeanLeft/LeanRight/Recovering.
-- [ ] Validator proves root position remains fixed.
-- [ ] Validator proves ordered recovery durations by offensive control quality.
-- [ ] Validator proves hesitation extends an active recovery.
-- [ ] Validator proves restart returns Centered.
-- [ ] Representative BT-DS-01 / stance / rhythm/contact regressions pass.
-- [ ] Final diff contains no unrelated changes.
+- [x] Unity editor project compiles.
+- [x] Scene upgrade attaches/configures the defender controller.
+- [x] Targeted BT-DF-01 validator covers Centered/LeanLeft/LeanRight/Recovering.
+- [x] Validator proves root position remains fixed.
+- [x] Validator proves ordered recovery durations by offensive control quality.
+- [x] Validator proves hesitation extends an active recovery.
+- [x] Validator proves restart returns Centered.
+- [x] Representative BT-DS-01 / stance / rhythm/contact regressions pass.
+- [x] Final diff contains no unrelated changes.
 
 User/manual after Codex:
 
@@ -216,8 +216,8 @@ Codex may flag architectural conflicts or hidden coupling these planned chunks w
 ## GitHub Implementation Handoff
 
 **ChatGPT first implementation:** COMPLETE FOR HANDOFF  
-**Executable verification:** NOT YET CLAIMED  
-**Task status remains:** IN PROGRESS
+**Executable verification:** PASSED 2026-10-07
+**Task status:** AWAITING PLAYTEST
 
 Implemented:
 
@@ -231,22 +231,10 @@ Implemented:
 - defender visual pivot scene upgrade,
 - targeted BT-DF-01 validator.
 
-### Codex next action
+### Codex verification result
 
-Use `AGENTS.md` and this current task as the assignment.
+Codex inspected the actual diff, ran the scene upgrade, compiled the Unity editor project, ran the targeted BT-DF-01 validator and complete BT-DS-01 regression validator, repaired hesitation recovery so it responds at accepted command time instead of delayed visual execution, and reran verification successfully.
 
-Codex should:
-
-1. synchronize `milestone/defender`,
-2. inspect the actual diff from `milestone/dribble-state`,
-3. run the BT-DF-01 scene upgrade so the scene/component serialization is real,
-4. compile the Unity editor project,
-5. run `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`,
-6. run `Bounce Theory/Validate BT-DS-01 Complete Dribble State` and relevant stance/rhythm/contact regressions,
-7. fix clear material in-scope issues,
-8. rerun verification,
-9. review final Git status/diff and commit/push scoped changes.
-
-If executable verification succeeds, change BT-DF-01 to `AWAITING PLAYTEST` and stop for user Play Mode verification.
+The next action is user Play Mode verification.
 
 Do not mark COMPLETE without user acceptance.

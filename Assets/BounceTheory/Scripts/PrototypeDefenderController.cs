@@ -168,17 +168,23 @@ namespace BounceTheory
                 return;
 
             if (currentState == DefenderState.Recovering)
-            {
-                if (dribbleController.ActiveAction == DribbleAction.Hesitation)
-                    ExtendRecoveryForHesitation();
                 return;
-            }
 
             committedSide = sourceHand;
             hasCommitment = true;
             currentState = sourceHand == BallHand.Left
                 ? DefenderState.LeaningLeft
                 : DefenderState.LeaningRight;
+        }
+
+        private void HandleDribbleActionAccepted(DribbleAction action)
+        {
+            if (dribbleController == null ||
+                dribbleController.CurrentPossessionState != PossessionState.Active)
+                return;
+
+            if (currentState == DefenderState.Recovering && action == DribbleAction.Hesitation)
+                ExtendRecoveryForHesitation();
         }
 
         private void HandleFloorContact(BallHand resolvedHand)
@@ -243,6 +249,7 @@ namespace BounceTheory
         {
             if (subscribed || dribbleController == null) return;
             dribbleController.DribbleStarted += HandleDribbleStarted;
+            dribbleController.DribbleActionAccepted += HandleDribbleActionAccepted;
             dribbleController.FloorContactReached += HandleFloorContact;
             dribbleController.BallReturned += HandleBallReturned;
             dribbleController.PossessionRestarted += ResetDefenderState;
@@ -258,6 +265,7 @@ namespace BounceTheory
             }
 
             dribbleController.DribbleStarted -= HandleDribbleStarted;
+            dribbleController.DribbleActionAccepted -= HandleDribbleActionAccepted;
             dribbleController.FloorContactReached -= HandleFloorContact;
             dribbleController.BallReturned -= HandleBallReturned;
             dribbleController.PossessionRestarted -= ResetDefenderState;
