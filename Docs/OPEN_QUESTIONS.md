@@ -16,7 +16,7 @@
 - **Continuation / grace after a bounce:** decide how much late continuation forgiveness Easy mode should provide after control returns without weakening rhythm scoring.
 - **Bounce resolution:** exact final rules for gather, mishandle, exposed ball, travel, double-dribble, and legal intentional pauses remain unresolved. The prototype may end a possession when a new dribble is attempted after the current finite rhythmic continuation window is exhausted; this is a testing rule, not the final basketball interpretation.
 - **Possession-end causes:** beyond the provisional expired-continuation case, decide which future events end a possession (steal, mishandle, gather, violation, made/missed finish, etc.) and which merely change state.
-- **Defender model beyond BT-DF-01:** Centered / LeaningLeft / LeaningRight / Recovering now have a provisional reaction model. Exact reach, steal, overcommit, beaten, anticipation/intelligence, stance sensitivity, and final recovery rules remain open.
+- **Final defender model:** Centered / lean / recovery / reach / overcommit / beaten now have provisional prototype rules. Final anticipation/intelligence, random-vs-deterministic steal tuning, stance sensitivity, foul behavior, exact reach windows, recovery tuning, and how Beaten feeds finishes remain open.
 
 ## Rhythm / Tuning Questions
 
