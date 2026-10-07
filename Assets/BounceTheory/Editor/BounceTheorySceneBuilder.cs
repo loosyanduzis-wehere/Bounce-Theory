@@ -349,6 +349,13 @@ namespace BounceTheory.Editor
             Debug.Log("BT-DF-01 defender lean/recovery upgrade applied without moving offense, defender root, or camera.");
         }
 
+        [MenuItem("Bounce Theory/Upgrade Prototype Scene To BT-DF-02-03 Defender Interaction")]
+        public static void UpgradeDefenderInteraction()
+        {
+            UpgradeDefenderLeanRecovery();
+            Debug.Log("BT-DF-02/03 defender interaction upgrade applied on top of the verified BT-DF-01 defender setup.");
+        }
+
         [MenuItem("Bounce Theory/Validate Chunk 1 Prototype Scene")]
         public static void ValidateScene()
         {
