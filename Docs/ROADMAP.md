@@ -107,26 +107,23 @@ Current feature:
   - timing-quality-dependent recovery
   - hesitation extends active recovery
 
-Planned next defender features:
+Current parallel implementation chunk:
 
-- `BT-DF-02 — Defender Reach + Steal Opportunity`
-  - add a readable Reaching state,
-  - Exposed ball control creates the strongest steal opportunity,
-  - Recovering ball control creates a smaller steal opportunity,
-  - Secure ball control largely protects the ball,
-  - keep this feature limited to reach/readability + steal opportunity; no Overcommitted or Beaten state yet.
-
-- `BT-DF-03 — Defender Overcommit + Beaten State`
-  - add a readable Overcommitted state after a failed/bad reach or strong offensive counter,
-  - allow a successful offensive exploit of that mistake to transition the defender to Beaten,
-  - preserve the rhythm/game-state authority established by the earlier defender features,
-  - keep finishes/scoring out of this feature.
+- `BT-DF-02/03 — Reach, Steal Opportunity, Overcommit + Beaten`
+  - Reaching state,
+  - deterministic Protected / Contested / Vulnerable steal opportunities,
+  - Exposed → prototype steal,
+  - Recovering → contested reach that can be escaped by a valid queued follow-up,
+  - failed contested reach → Overcommitted,
+  - Secure non-pound counter during Overcommitted → Beaten,
+  - timed Overcommitted / Beaten readability windows,
+  - no scoring, finishes, shot contest, locomotion, or random steal rolls.
 
 Intended prototype defender progression:
 
-`Lean → Recover → Reach → Overcommit → Beaten`
+`Lean / Recover → Reach → Steal or Overcommit → Beaten`
 
-These are documented upcoming feature chunks, not active implementation tasks until promoted into `IMPLEMENTATION_STATUS.md`.
+This work is isolated on `milestone/defender-interaction` while Codex verifies BT-DF-01 on `milestone/defender`.
 
 ---
 
