@@ -88,3 +88,23 @@ A queued relation is captured when the input is accepted and must not be recompu
 - An attempted continuation beyond the finite `2.0-beat` vocabulary now reports both `ContinuationWindowExpired` possession end and an explicit `Unreachable` motion outcome, preserving the existing contact-scheduling diagnostic contract.
 - `BT-DS-01 Complete Dribble State` passes after the fixes, including representative stance-profile, pound, crossover, hesitation, behind-the-back, queued-input, rhythm, and target-contact regressions.
 - The C# editor project compiles with zero errors. The remaining warnings are pre-existing Unity API obsolescence warnings in editor validation code.
+
+
+## BT-DF-01 Defender Lean / Recovery Implementation
+
+ChatGPT/GitHub first implementation is present on `milestone/defender`.
+
+Technical shape:
+
+- New `PrototypeDefenderController` subscribes to the existing `PoundDribbleController` gameplay events.
+- Defender reaction timing does not own a separate rhythm clock.
+- A dedicated `DefenderReactionVisual` pivot carries temporary body lean/recovery motion while the `Defender` root remains stationary.
+- Dribble start commits the defender toward the action source-hand side unless the defender is already Recovering.
+- Crossover and behind-the-back transfer resolution at floor contact enter Recovering when ownership resolves away from the committed side.
+- Recovery duration is derived from the offense's accepted `BallControlQuality`: Secure > Recovering > Exposed.
+- A hesitation that actually begins while defender state is Recovering extends the active recovery duration.
+- `PoundDribbleController.PossessionRestarted` is a new narrow integration event so restart can reset defender state without polling UI/input state.
+- The existing scene is upgraded through `Bounce Theory/Upgrade Prototype Scene To BT-DF-01 Defender Lean Recovery`; do not manually rewrite scene YAML.
+- Targeted validator: `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`.
+
+ChatGPT did not claim Unity compilation or executable validation. Codex must run the scene upgrade, compile, run the targeted validator, run the existing BT-DS-01 and representative stance/rhythm regressions, and repair clear in-scope issues before the task can move to `AWAITING PLAYTEST`.
