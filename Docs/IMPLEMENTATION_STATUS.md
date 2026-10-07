@@ -1,220 +1,190 @@
 # Bounce Theory — Implementation Status
 
 **Project status:** Active prototype  
-**Current branch:** `milestone/defender-interaction`  
-**Current task:** `BT-DF-02/03 — Reach, Steal, Overcommit + Beaten`  
+**Current branch:** `milestone/finishes`  
+**Current task:** `BT-FN-01 — Core Finish Timing System`  
 **Task status:** `IN PROGRESS`  
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
 **Last updated:** 2026-10-07
 
-> This branch is the active defender-interaction branch. BT-DF-01 passed Codex verification and user Play Mode acceptance on 2026-10-07, and that accepted checkpoint is merged into this branch.
+> This branch is being developed in parallel with Codex verification of `milestone/defender-interaction`. It was created from the then-current defender interaction implementation. Before final Codex handoff, absorb any material parent-branch fixes rather than overwriting them.
 
 ---
 
-## Accepted Foundation
+## Accepted / Inherited Foundation
 
 - Core rhythm/contact foundation: COMPLETE.
 - Core dribble vocabulary: COMPLETE.
 - Stance milestone: PROTOTYPE COMPLETE.
 - Dribble-state milestone: PROTOTYPE COMPLETE.
-- BT-DF-01 provides Centered / LeaningLeft / LeaningRight / Recovering plus timing-quality-dependent recovery.
-- BT-DF-01 passed Codex executable verification and user Play Mode verification on **2026-10-07**.
-- The verified/user-accepted BT-DF-01 accepted-action timing fix and serialized scene setup are merged into this branch.
+- BT-DF-01 lean/recovery: verified and user-accepted.
+- BT-DF-02/03 defender interaction implementation is inherited from `milestone/defender-interaction`; its own executable verification may still advance independently.
+
+Finishes must consume the existing rhythm clock, possession lifecycle, and defender state rather than create parallel timing/contest systems.
 
 ---
 
-## Active Task — BT-DF-02/03
+## Active Task — BT-FN-01
 
-**Title:** Reach, Steal Opportunity, Overcommit + Beaten  
+**Title:** Core Finish Timing System  
 **Status:** IN PROGRESS
 
 ### Goal
 
-Complete the next meaningful defender-interaction layer in one coherent chunk:
+Add the first complete finish loop:
 
-`Lean / Recover → Reach → Steal or Overcommit → Beaten`
+`create advantage → commit finish → release on shared rhythm target → made/missed possession outcome`
 
-The defender should now punish poor offensive timing, miss when the offense protects a contested dribble with a valid queued response, and become exploitable after that failed reach.
+with Shot, Stepback, and Drive all using the same reusable timing architecture.
+
+### Controls
+
+- `Q` — Shot
+- `E` — Stepback
+- `F` — Drive
+- first press commits the selected finish,
+- second press of the same key releases/resolves it,
+- `R` restarts after a made/missed finish through the existing possession restart path.
 
 ### Unknowns Pass — Resolved For This Prototype
 
-- Keep defender behavior deterministic; do not introduce random steal rolls.
-- Use existing `BallControlQuality` as the first steal-opportunity input.
-- `Secure` offense is protected from automatic reach attempts.
-- `Recovering` offense creates a **contested** reach opportunity.
-- `Exposed` offense creates a **vulnerable** reach opportunity.
-- Vulnerable reach at floor contact results in a prototype steal.
-- Contested reach results in a steal unless the offense already has a valid queued follow-up accepted before floor contact.
-- Escaping a contested reach with a queued follow-up makes the defender `Overcommitted`.
-- While Overcommitted, a **Secure non-pound** action (crossover, hesitation, or behind-the-back) is treated as a successful counter and moves the defender to `Beaten`.
-- Pound may maintain possession but does not count as the prototype “counter” that beats an overcommit.
-- Overcommitted and Beaten are timed readable windows, not final animation or AI.
-- Prototype steal ends the possession through the existing possession lifecycle with a new `DefenderSteal` reason.
-- Restart clears all defender reach/overcommit/beaten state.
-- Defender root remains stationary; visual reactions remain on the defender visual pivot.
-- Do not add randomness, locomotion, scoring, finishes, shot contests, or final AI.
-
-### State / Outcome Additions
-
-#### Defender states
-
-- `Reaching`
-- `Overcommitted`
-- `Beaten`
-
-#### Steal opportunity
-
-- `Protected`
-- `Contested`
-- `Vulnerable`
-
-#### Reach outcome
-
-- `None`
-- `Missed`
-- `Stolen`
+- Finishes use a separate `PrototypeFinishController`; do not merge finish state into the dribble enum.
+- Finish timing remains anchored to the shared `RhythmClock`.
+- A committed finish targets the first whole beat that leaves enough prototype lead time for that finish type.
+- Current prototype minimum lead times differ by type but are serialized/tunable.
+- Defender state is snapshotted when the finish is committed. The resulting green window does not shrink later if the defender visually recovers during the finish.
+- `Beaten` → Wide green window.
+- `Recovering` / `Overcommitted` → Medium green window.
+- `Centered`, `LeaningLeft`, `LeaningRight`, and `Reaching` → Tight green window.
+- The current defender root is stationary, so defender **state** is the first contest proxy. Final spatial contest math remains deferred.
+- A finish may start only when the ball is `Controlled`, with no queued dribble or pending plain-Space stance input.
+- Once a finish is committed, ordinary dribble input is suppressed until the finish resolves or possession restarts.
+- Releasing inside the captured green half-window → `GreenMade`.
+- Releasing before/after it → `EarlyMiss` / `LateMiss`.
+- Failing to release before the late edge auto-resolves `LateMiss`.
+- Made/missed finishes end the current possession through `FinishMade` / `FinishMissed`.
+- No score calculation is introduced yet.
+- No ball-flight, rim physics, locomotion, shot contest animation, or polished finish animation is introduced yet.
 
 ### Prototype Flow
 
 ```text
-Secure offense
-→ no reach
-→ normal lean/recovery behavior
+Controlled possession
+  ↓ Q / E / F
+Finish Timing
+  ↓ capture defender state
+  ↓ select Tight / Medium / Wide green window
+  ↓ target shared whole beat
+  ↓ second same-key press
 
-Recovering offense
-→ Reaching / Contested
-→ queued valid follow-up already accepted?
-    yes → reach misses → Overcommitted
-            ↓ Secure crossover / hesitation / BTB
-          Beaten
-    no  → DefenderSteal → possession Ended
+inside window  → GreenMade  → possession Ended
+too early      → EarlyMiss  → possession Ended
+too late       → LateMiss   → possession Ended
+no release     → LateMiss   → possession Ended
 
-Exposed offense
-→ Reaching / Vulnerable
-→ DefenderSteal → possession Ended
-
-Overcommitted
-→ timer expires → Centered
-→ or Secure non-pound counter → Beaten
-
-Beaten
-→ readable timed opening
-→ Centered
+R → restart → Idle
 ```
 
 ### Scope
 
-- Extend `PrototypeDefenderController`.
-- Add deterministic steal-opportunity classification.
-- Add readable Reaching / Overcommitted / Beaten visual states.
-- Add prototype successful-steal possession ending.
-- Reuse the existing queued-input system as the contested-reach escape condition.
-- Add counters/debug state for reach attempts, steals, overcommits, beaten results.
-- Add deterministic validator covering the complete BT-DF-02/03 loop.
-- Preserve BT-DF-01 behavior and all accepted offense/rhythm/stance behavior.
+- Add reusable finish types: Shot / Stepback / Drive.
+- Add finish phases: Idle / Timing / Resolved.
+- Add Tight / Medium / Wide defender-dependent green windows.
+- Add GreenMade / EarlyMiss / LateMiss.
+- Add shared-rhythm finish target scheduling.
+- Add Q/E/F input handling.
+- Add narrow dribble-input suppression while finish timing is active.
+- Add `FinishMade` / `FinishMissed` possession-end reasons.
+- Add temporary timing cue/debug display.
+- Add scene upgrade/setup.
+- Add one deterministic validator covering the complete first finish loop.
+- Preserve defender, dribble, stance, rhythm, and restart architecture.
 
 ### Success Criteria
 
-- [ ] Secure action does not trigger Reaching.
-- [ ] Recovering-quality action triggers Reaching with Contested opportunity.
-- [ ] Exposed-quality action triggers Reaching with Vulnerable opportunity.
-- [ ] Vulnerable reach resolves to DefenderSteal at floor contact.
-- [ ] Contested reach without queued follow-up resolves to DefenderSteal.
-- [ ] Contested reach with a valid queued follow-up misses and creates Overcommitted.
-- [ ] Queued input is preserved when the reach misses.
-- [ ] Secure crossover / hesitation / BTB during Overcommitted creates Beaten.
-- [ ] Pound does not create Beaten.
-- [ ] Overcommitted times out to Centered.
-- [ ] Beaten times out to Centered.
-- [ ] Restart clears reach opportunity/outcome/timers and returns Centered.
-- [ ] Defender root remains stationary.
-- [ ] Existing BT-DF-01 lean/recovery behavior still works.
-- [ ] Existing BT-DS-01, stance, rhythm, and contact behavior remains intact.
+- [ ] Q commits Shot.
+- [ ] E commits Stepback.
+- [ ] F commits Drive.
+- [ ] Finishes start only from Controlled with no pending dribble/Space input.
+- [ ] Committed finish suppresses ordinary dribble acceptance.
+- [ ] Finish target lands on the shared rhythm grid.
+- [ ] Beaten maps to Wide.
+- [ ] Recovering / Overcommitted map to Medium.
+- [ ] Centered / Leaning / Reaching map to Tight.
+- [ ] Wide > Medium > Tight numerically.
+- [ ] Window tier is captured at commit time.
+- [ ] On-target release produces GreenMade / FinishMade.
+- [ ] Early release produces EarlyMiss / FinishMissed.
+- [ ] Late release produces LateMiss / FinishMissed.
+- [ ] No release auto-resolves LateMiss.
+- [ ] Restart returns finish state to Idle and restores dribble input.
+- [ ] Existing offense, defender, and camera roots remain stationary.
+- [ ] No Rigidbody / CharacterController / free locomotion is introduced.
+- [ ] Defender and dribble regressions remain intact.
 
 ### Out of Scope
 
 Do not add:
 
-- random steal percentages,
-- difficulty-specific defender intelligence,
-- defender locomotion/pathfinding,
-- shot contest,
-- finish triggers,
-- scoring,
-- final stance-based steal math,
-- animation-driven authority,
-- final foul/travel/gather rules,
-- polished character animation.
+- possession scoring,
+- shot percentage/random make rolls,
+- spatial rim/ball simulation,
+- defender locomotion or contest animation,
+- final finish animations,
+- dunk variants,
+- spectacular/unlocked finish progression,
+- stance-specific finish math,
+- difficulty-specific finish windows,
+- final foul/violation/gather semantics,
+- mid-bounce finish queueing.
 
 ### Verification Plan
 
-Automated / executable after integration with latest BT-DF-01 fixes:
+Automated / executable after parent defender branch synchronization:
 
-- [ ] Unity editor project compiles.
-- [ ] Run the existing BT-DF-01 scene upgrade if needed.
-- [ ] Run the new BT-DF-02/03 defender interaction validator.
-- [ ] Run BT-DF-01 validator.
-- [ ] Run BT-DS-01 complete dribble-state validator.
-- [ ] Run representative stance/rhythm/contact regressions.
-- [ ] Confirm no unrelated changes.
+- [ ] synchronize/absorb latest `milestone/defender-interaction` material fixes,
+- [ ] run `Bounce Theory/Upgrade Prototype Scene To BT-FN-01 Core Finishes`,
+- [ ] compile Unity editor project,
+- [ ] run `Bounce Theory/Validate BT-FN-01 Core Finishes`,
+- [ ] run BT-DF-02/03 validator,
+- [ ] run BT-DF-01 validator,
+- [ ] run BT-DS-01 validator,
+- [ ] run representative stance/rhythm/contact regressions,
+- [ ] inspect final diff/status for unrelated changes.
 
 Manual after Codex:
 
-- [ ] Reach is visually readable.
-- [ ] Poor timing visibly creates defensive danger.
-- [ ] Queuing a response during a contested reach feels like escaping pressure.
-- [ ] Failed reach → Overcommitted reads clearly.
-- [ ] Clean counter → Beaten reads clearly.
-- [ ] Steal ending/restart feels coherent enough for prototype use.
-- [ ] Existing dribble responsiveness remains intact.
+- [ ] Q/E/F control loop is understandable.
+- [ ] timing cue is readable enough to test.
+- [ ] Tight / Medium / Wide windows feel meaningfully different.
+- [ ] creating a Beaten defender meaningfully improves the finish opportunity.
+- [ ] finish commit does not make dribbling feel broken or sticky.
+- [ ] made/missed → restart flow is coherent.
 
-Do not mark COMPLETE without user Play Mode acceptance.
-
+Do not mark COMPLETE until user Play Mode verification is accepted.
 
 ---
 
 ## GitHub Implementation Handoff
 
-**ChatGPT first implementation:** COMPLETE FOR HANDOFF  
-**BT-DF-01 verified foundation:** MERGED INTO THIS BRANCH  
-**BT-DF-02/03 executable verification:** NOT YET CLAIMED  
+**ChatGPT first implementation:** COMPLETE FOR STATIC HANDOFF  
+**Unity compile / executable validation:** NOT YET CLAIMED  
 **Task status remains:** IN PROGRESS
 
-Implemented in the combined chunk:
+Implemented:
 
-- Reaching / Overcommitted / Beaten defender states,
-- Protected / Contested / Vulnerable steal-opportunity classification,
-- deterministic DefenderSteal possession ending,
-- queued-response escape for Contested reach,
-- failed reach → Overcommitted,
-- Secure non-pound counter → Beaten,
-- timed Overcommitted / Beaten windows,
-- restart cleanup,
-- expanded debug state/counters,
-- combined scene-upgrade entry point,
-- full BT-DF-02/03 validator,
-- Codex BT-DF-01 accepted-command timing fix carried forward,
-- Codex BT-DF-01 scene serialization carried forward.
+- `PrototypeFinishController.cs` + Unity metadata,
+- Shot / Stepback / Drive finish types,
+- Q / E / F two-stage commit/release controls,
+- shared-whole-beat finish target scheduling,
+- defender-state snapshot → Tight / Medium / Wide green window,
+- GreenMade / EarlyMiss / LateMiss resolution,
+- automatic late miss,
+- finish gameplay-input suppression,
+- `FinishMade` / `FinishMissed` possession outcomes,
+- timing cue/debug HUD,
+- scene upgrade,
+- full BT-FN-01 validator.
 
-### Next Codex pass
-
-Work on `milestone/defender-interaction`.
-
-Treat this as one coherent feature review, not two micro-reviews.
-
-Codex should:
-
-1. synchronize the branch and inspect the actual diff,
-2. run `Bounce Theory/Upgrade Prototype Scene To BT-DF-02-03 Defender Interaction`,
-3. compile the Unity editor project,
-4. run `Bounce Theory/Validate BT-DF-02-03 Defender Interaction`,
-5. rerun `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`,
-6. rerun `Bounce Theory/Validate BT-DS-01 Complete Dribble State`,
-7. run representative stance/rhythm/contact regressions,
-8. fix clear material in-scope issues,
-9. rerun verification and inspect final status/diff.
-
-If executable verification succeeds, change BT-DF-02/03 to `AWAITING PLAYTEST` and stop.
-
-Do not mark COMPLETE without user Play Mode acceptance.
+The repo remains the context package. Codex should inspect actual code/diff rather than trust this summary.
