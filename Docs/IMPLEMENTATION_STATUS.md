@@ -181,6 +181,38 @@ Do not mark COMPLETE until user Play Mode verification is accepted.
 
 ---
 
+## Upcoming Defender Features — Review Only
+
+These are the intended next coherent chunks after BT-DF-01. They are **not** part of the current implementation/review scope unless explicitly promoted later.
+
+### BT-DF-02 — Defender Reach + Steal Opportunity
+
+Purpose:
+
+- add a readable `Reaching` state,
+- use existing ball-control quality as the first steal-opportunity input,
+- `Exposed` → strongest steal opportunity,
+- `Recovering` → smaller steal opportunity,
+- `Secure` → largely protected,
+- keep Overcommitted / Beaten / scoring / finishes out of scope.
+
+### BT-DF-03 — Defender Overcommit + Beaten State
+
+Purpose:
+
+- add `Overcommitted` after a failed/bad reach or strong offensive counter,
+- transition to `Beaten` when the offense successfully exploits that mistake,
+- preserve rhythm/game-state authority rather than animation completion,
+- keep finish execution and scoring in later milestones.
+
+Intended progression:
+
+`Lean → Recover → Reach → Overcommit → Beaten`
+
+Codex may flag architectural conflicts or hidden coupling these planned chunks would create while reviewing BT-DF-01, but should **not implement them during BT-DF-01 review**.
+
+---
+
 ## GitHub Implementation Handoff
 
 **ChatGPT first implementation:** COMPLETE FOR HANDOFF  
