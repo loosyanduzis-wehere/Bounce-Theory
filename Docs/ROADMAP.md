@@ -98,14 +98,15 @@ Deferred until interacting systems exist:
 
 **Status:** IN PROGRESS
 
-Current feature:
+Completed:
 
 - `BT-DF-01 — Defender Lean + Recovery Foundation`
   - Centered
   - Leaning left / right
   - Recovering
   - timing-quality-dependent recovery
-  - hesitation extends active recovery
+  - command-time hesitation recovery extension
+  - user Play Mode accepted 2026-10-07
 
 Planned next defender features:
 
