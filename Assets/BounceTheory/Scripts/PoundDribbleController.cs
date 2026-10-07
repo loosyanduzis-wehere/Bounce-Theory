@@ -10,7 +10,7 @@ namespace BounceTheory
     public enum DribbleAction { Pound, Crossover, Hesitation, BehindTheBack }
     public enum PlayerStance { Low, Medium, High }
     public enum PossessionState { Active, Ended }
-    public enum PossessionEndReason { None, ContinuationWindowExpired, DefenderSteal, Manual }
+    public enum PossessionEndReason { None, ContinuationWindowExpired, DefenderSteal, FinishMade, FinishMissed, Manual }
     public enum BallControlQuality { Secure, Recovering, Exposed }
     public enum FollowUpRelation { FirstAction, Repeat, SameHandVariation, Transfer, CounterTransfer }
 
@@ -151,6 +151,7 @@ namespace BounceTheory
         private bool spaceModifierConsumed;
         private bool pendingPlainSpace;
         private float pendingPlainSpaceDeadline;
+        private bool gameplayInputSuppressed;
 
         public BallHand StartingHand => startingHand;
         public BallHand CurrentHand => currentHand;
@@ -227,6 +228,7 @@ namespace BounceTheory
         public FollowUpRelation ActiveFollowUpRelation => activeFollowUpRelation;
         public FollowUpRelation PendingFollowUpRelation => pendingFollowUpRelation;
         public int SequenceActionCount => sequenceActionCount;
+        public bool GameplayInputSuppressed => gameplayInputSuppressed;
 
         public event Action<BallHand> DribbleStarted;
         public event Action<DribbleAction> DribbleActionAccepted;
@@ -298,6 +300,12 @@ namespace BounceTheory
 
                 if (possessionState == PossessionState.Ended)
                     return;
+
+                if (gameplayInputSuppressed)
+                {
+                    Tick(Time.deltaTime);
+                    return;
+                }
 
                 bool leftPoundPressed = keyboard.wKey.wasPressedThisFrame;
                 bool rightPoundPressed = keyboard.upArrowKey.wasPressedThisFrame;
@@ -591,6 +599,7 @@ namespace BounceTheory
             spaceModifierConsumed = false;
             pendingPlainSpace = false;
             pendingPlainSpaceDeadline = 0f;
+            gameplayInputSuppressed = false;
             SetContactIndicator(false);
             SyncAnchorHeights();
             SnapToCurrentHand();
@@ -612,6 +621,7 @@ namespace BounceTheory
 
             possessionState = PossessionState.Ended;
             possessionEndReason = reason == PossessionEndReason.None ? PossessionEndReason.Manual : reason;
+            gameplayInputSuppressed = false;
             ClearPendingInput();
             pendingPlainSpace = false;
             pendingPlainSpaceDeadline = 0f;
@@ -620,6 +630,11 @@ namespace BounceTheory
                 ? "Rejected: continuation target is unreachable; possession ended (ContinuationWindowExpired)."
                 : $"Possession ended: {possessionEndReason}.";
             Log(lastInputDecision);
+        }
+
+        public void SetGameplayInputSuppressed(bool suppressed)
+        {
+            gameplayInputSuppressed = suppressed && possessionState == PossessionState.Active;
         }
 
         public void Configure(Transform leftAnchor, Transform rightAnchor, GameObject contactIndicator)
