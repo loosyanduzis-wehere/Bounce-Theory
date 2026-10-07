@@ -92,7 +92,7 @@ A queued relation is captured when the input is accepted and must not be recompu
 
 ## BT-DF-01 Defender Lean / Recovery Implementation
 
-ChatGPT/GitHub first implementation is present on `milestone/defender`.
+BT-DF-01 is accepted foundation on `milestone/defender`.
 
 Technical shape:
 
@@ -102,12 +102,12 @@ Technical shape:
 - Dribble start commits the defender toward the action source-hand side unless the defender is already Recovering.
 - Crossover and behind-the-back transfer resolution at floor contact enter Recovering when ownership resolves away from the committed side.
 - Recovery duration is derived from the offense's accepted `BallControlQuality`: Secure > Recovering > Exposed.
-- A hesitation that actually begins while defender state is Recovering extends the active recovery duration.
+- A hesitation accepted while defender state is Recovering extends the active recovery duration at command time; later visual execution does not apply the extension again.
 - `PoundDribbleController.PossessionRestarted` is a new narrow integration event so restart can reset defender state without polling UI/input state.
 - The existing scene is upgraded through `Bounce Theory/Upgrade Prototype Scene To BT-DF-01 Defender Lean Recovery`; do not manually rewrite scene YAML.
 - Targeted validator: `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`.
 
-ChatGPT did not claim Unity compilation or executable validation. Codex must run the scene upgrade, compile, run the targeted validator, run the existing BT-DS-01 and representative stance/rhythm regressions, and repair clear in-scope issues before the task can move to `AWAITING PLAYTEST`.
+Codex compiled and executable-validated BT-DF-01, repaired command-time hesitation recovery semantics, and user Play Mode verification was accepted on **2026-10-07**.
 
 
 ## BT-DF-02/03 Defender Interaction Implementation
