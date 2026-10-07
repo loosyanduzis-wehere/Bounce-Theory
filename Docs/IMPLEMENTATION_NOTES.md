@@ -5,7 +5,7 @@
 
 ## Active Branch / Handoff
 
-- Active development branch: `milestone/dribble-state`.
+- Active development branch for the next parallel feature: `milestone/defender-interaction`.
 - Current task definition and verification gate live in `Docs/IMPLEMENTATION_STATUS.md`.
 - `dev` remains the completed-milestone integration branch.
 - No milestone merge to `dev` without explicit user approval.
@@ -108,3 +108,30 @@ Technical shape:
 - Targeted validator: `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`.
 
 ChatGPT did not claim Unity compilation or executable validation. Codex must run the scene upgrade, compile, run the targeted validator, run the existing BT-DS-01 and representative stance/rhythm regressions, and repair clear in-scope issues before the task can move to `AWAITING PLAYTEST`.
+
+
+## BT-DF-02/03 Defender Interaction Implementation
+
+This branch was created while Codex reviewed BT-DF-01. Codex subsequently completed BT-DF-01 executable verification on `milestone/defender` and found one material architecture issue: hesitation recovery extension must occur at accepted command time, not delayed visual execution. That fix, the accepted-action event, the corrected validator behavior, and the serialized defender scene setup were carried forward and merged into this branch before the larger defender feature handoff.
+
+Combined prototype rules:
+
+- Secure offense → Protected; defender does not auto-reach.
+- Recovering offense → Contested reach.
+- Exposed offense → Vulnerable reach.
+- Vulnerable reach steals at floor contact even if another action was queued.
+- Contested reach steals if no follow-up was already accepted.
+- Contested reach with an accepted queued follow-up misses and creates Overcommitted.
+- A Secure crossover, hesitation, or behind-the-back that executes during Overcommitted creates Beaten.
+- Pound does not count as the overcommit-breaking counter.
+- Overcommitted and Beaten are timed readability windows.
+- Successful prototype steal calls the existing possession lifecycle with `PossessionEndReason.DefenderSteal`.
+- Defender root remains stationary; presentation stays on `DefenderReactionVisual`.
+
+No random steal roll is used in this prototype. Final defender intelligence, steal percentages, stance-based vulnerability, fouls, finishes, and scoring remain unresolved.
+
+Targeted validator:
+
+`Bounce Theory/Validate BT-DF-02-03 Defender Interaction`
+
+Current branch code has not been Unity-compiled or executable-validated by ChatGPT. The next Codex pass must rerun the combined scene upgrade, compile, run BT-DF-02/03, BT-DF-01, BT-DS-01, and representative stance/rhythm regressions.
