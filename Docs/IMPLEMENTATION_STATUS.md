@@ -18,8 +18,9 @@
 - Core dribble vocabulary: COMPLETE.
 - Stance milestone: PROTOTYPE COMPLETE.
 - Dribble-state milestone: PROTOTYPE COMPLETE.
-- BT-DF-01 first implementation exists and provides Centered / LeaningLeft / LeaningRight / Recovering plus timing-quality-dependent recovery.
-- Codex review of BT-DF-01 is happening independently on `milestone/defender`.
+- BT-DF-01 provides Centered / LeaningLeft / LeaningRight / Recovering plus timing-quality-dependent recovery.
+- Codex executable verification for BT-DF-01 passed on `milestone/defender` on 2026-10-07; BT-DF-01 is awaiting user Play Mode acceptance.
+- The verified BT-DF-01 accepted-action timing fix and serialized scene setup have been merged into this branch.
 
 ---
 
@@ -167,5 +168,53 @@ Manual after Codex:
 - [ ] Clean counter → Beaten reads clearly.
 - [ ] Steal ending/restart feels coherent enough for prototype use.
 - [ ] Existing dribble responsiveness remains intact.
+
+Do not mark COMPLETE without user Play Mode acceptance.
+
+
+---
+
+## GitHub Implementation Handoff
+
+**ChatGPT first implementation:** COMPLETE FOR HANDOFF  
+**BT-DF-01 verified foundation:** MERGED INTO THIS BRANCH  
+**BT-DF-02/03 executable verification:** NOT YET CLAIMED  
+**Task status remains:** IN PROGRESS
+
+Implemented in the combined chunk:
+
+- Reaching / Overcommitted / Beaten defender states,
+- Protected / Contested / Vulnerable steal-opportunity classification,
+- deterministic DefenderSteal possession ending,
+- queued-response escape for Contested reach,
+- failed reach → Overcommitted,
+- Secure non-pound counter → Beaten,
+- timed Overcommitted / Beaten windows,
+- restart cleanup,
+- expanded debug state/counters,
+- combined scene-upgrade entry point,
+- full BT-DF-02/03 validator,
+- Codex BT-DF-01 accepted-command timing fix carried forward,
+- Codex BT-DF-01 scene serialization carried forward.
+
+### Next Codex pass
+
+Work on `milestone/defender-interaction`.
+
+Treat this as one coherent feature review, not two micro-reviews.
+
+Codex should:
+
+1. synchronize the branch and inspect the actual diff,
+2. run `Bounce Theory/Upgrade Prototype Scene To BT-DF-02-03 Defender Interaction`,
+3. compile the Unity editor project,
+4. run `Bounce Theory/Validate BT-DF-02-03 Defender Interaction`,
+5. rerun `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`,
+6. rerun `Bounce Theory/Validate BT-DS-01 Complete Dribble State`,
+7. run representative stance/rhythm/contact regressions,
+8. fix clear material in-scope issues,
+9. rerun verification and inspect final status/diff.
+
+If executable verification succeeds, change BT-DF-02/03 to `AWAITING PLAYTEST` and stop.
 
 Do not mark COMPLETE without user Play Mode acceptance.
