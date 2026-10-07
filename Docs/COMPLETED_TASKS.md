@@ -237,4 +237,37 @@ Exact stance tuning and the `0.18 s` modifier grace remain provisional for later
 
 ---
 
+## BT-DS-01 — Complete Prototype Dribble-State Milestone
+
+**Completed:** 2026-10-06  
+**Milestone:** Ball Control Language / Dribble State
+
+### Result
+
+The prototype now has an explicit possession/dribble-state layer that preserves rhythm authority while exposing contextual state for later defender and scoring systems.
+
+Key behavior includes:
+
+- possession lifecycle: Active / Ended,
+- R-key and temporary button restart,
+- expired finite-continuation attempts end the prototype possession instead of leaving a dead/unreachable retry loop,
+- waiting alone does not end possession,
+- resolved action context preserves action, stance, timing judgment, resulting hand, control quality, and sequence count,
+- control quality maps Perfect/Good → Secure, Early/Late → Recovering, Broken Rhythm → Exposed,
+- accepted follow-ups classify as FirstAction / Repeat / SameHandVariation / Transfer / CounterTransfer,
+- queued follow-ups preserve their accepted timing/contact/relation context,
+- current hand, ball phase, stance, timing, previous move, and follow-up input remain orthogonal contextual dimensions rather than a canned combo system.
+
+### Verification
+
+Codex fresh-context verification compiled the Unity editor project, repaired queued-action authority and expired-target reporting issues, and passed the complete BT-DS-01 validator plus representative stance/dribble/rhythm/contact regressions.
+
+User Play Mode verification was accepted on **2026-10-06**.
+
+### Follow-Up
+
+The dribble-state context is now ready to drive the defender prototype. Final combo legality, stance/exposure advantages, gather/mishandle semantics, and difficulty-specific continuation grace remain deferred.
+
+---
+
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
