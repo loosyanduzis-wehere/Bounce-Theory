@@ -130,15 +130,25 @@ This work is isolated on `milestone/defender-interaction` on top of the verified
 
 ## Milestone 5 — Finishes
 
-**Status:** PLANNED
+**Status:** IN PROGRESS
 
-Planned areas:
+Current feature:
 
-- Shot
-- Stepback
-- Drive
-- Dunk / finish expansion
-- Defender-dependent timing windows
+- `BT-FN-01 — Core Finish Timing System`
+  - Q Shot / E Stepback / F Drive,
+  - two-stage commit/release timing,
+  - shared-rhythm finish targets,
+  - defender-dependent Tight / Medium / Wide green windows,
+  - made / early miss / late miss possession outcomes,
+  - temporary timing cue and deterministic validation.
+
+Later finish work:
+
+- richer shot / stepback / drive animation,
+- dunk / finish expansion,
+- spatial contest refinement,
+- stance/difficulty effects on finish opportunity,
+- spectacular unlocked finishes.
 
 ---
 
