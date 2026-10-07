@@ -8,7 +8,7 @@
 **Project instructions:** `AGENTS.md`  
 **Last updated:** 2026-10-07
 
-> This branch is a parallel implementation branch created while Codex reviews BT-DF-01 on `milestone/defender`. It intentionally builds on the BT-DF-01 API/shape that existed at branch creation. Before final integration, absorb any material Codex fixes from the parent defender branch rather than overwriting them.
+> This branch is the active defender-interaction branch. BT-DF-01 passed Codex verification and user Play Mode acceptance on 2026-10-07, and that accepted checkpoint is merged into this branch.
 
 ---
 
