@@ -5,7 +5,7 @@
 
 ## Active Branch / Handoff
 
-- Active development branch for the next parallel feature: `milestone/defender-interaction`.
+- Active development branch for the next parallel feature: `milestone/finishes`.
 - Current task definition and verification gate live in `Docs/IMPLEMENTATION_STATUS.md`.
 - `dev` remains the completed-milestone integration branch.
 - No milestone merge to `dev` without explicit user approval.
@@ -135,3 +135,33 @@ Targeted validator:
 `Bounce Theory/Validate BT-DF-02-03 Defender Interaction`
 
 Current branch code has not been Unity-compiled or executable-validated by ChatGPT. The next Codex pass must rerun the combined scene upgrade, compile, run BT-DF-02/03, BT-DF-01, BT-DS-01, and representative stance/rhythm regressions.
+
+
+## BT-FN-01 Core Finish Timing Implementation
+
+BT-FN-01 is implemented on `milestone/finishes`, branched from the then-current `milestone/defender-interaction` while that parent branch is being independently verified.
+
+Technical shape:
+
+- New `PrototypeFinishController` owns finish type/phase/window/outcome state.
+- Q / E / F select Shot / Stepback / Drive.
+- First same-key press commits; second same-key press releases.
+- A finish can currently commit only from `BallLogicalPhase.Controlled` with no pending dribble or pending plain-Space stance input.
+- Committing a finish uses a narrow `PoundDribbleController.GameplayInputSuppressed` boundary so normal dribbles cannot be accepted during finish timing.
+- Finish timing target is the first whole beat on the existing `RhythmClock` that satisfies the finish type's serialized minimum lead time.
+- Defender state is captured at finish commitment and mapped to Tight / Medium / Wide. The window is not recomputed later during the attempt.
+- Default prototype green half-windows are serialized and ordered Tight < Medium < Wide.
+- On-target release → `GreenMade` / `PossessionEndReason.FinishMade`.
+- Early/late/no release → miss outcome / `PossessionEndReason.FinishMissed`.
+- A temporary `FinishTimingCue` and finish HUD provide readability without pretending placeholder visuals are final animation.
+- Restart clears finish state and input suppression through the existing possession restart event.
+
+Scene upgrade:
+
+`Bounce Theory/Upgrade Prototype Scene To BT-FN-01 Core Finishes`
+
+Targeted validator:
+
+`Bounce Theory/Validate BT-FN-01 Core Finishes`
+
+ChatGPT has performed static repository review only. Unity compile, scene serialization, executable validator runs, and parent defender-interaction synchronization remain for Codex.
