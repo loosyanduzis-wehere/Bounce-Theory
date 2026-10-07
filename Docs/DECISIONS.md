@@ -191,3 +191,33 @@ The first defender steal-pressure loop uses deterministic gameplay-state rules i
 The prototype needs to prove that rhythm quality and contextual follow-ups create readable basketball consequences before adding AI probability or difficulty tuning.
 
 Deterministic rules make cause/effect legible, testable, and compatible with the rhythm-authoritative input architecture. Final steal probability/intelligence may change later.
+
+
+---
+
+## Decision 009 — Finish Timing Uses Shared Rhythm With Captured Defender Advantage
+
+**Status:** Active for prototype
+
+### Decision
+
+The first finish system uses a two-stage timing event on the existing shared rhythm clock:
+
+1. commit a finish,
+2. release the same finish input on its scheduled rhythm target.
+
+The finish target snaps to the shared/global pulse rather than using an unrelated timer.
+
+Defender state is captured when the finish is committed and determines the green-window tier for that attempt:
+
+- Beaten → Wide,
+- Recovering / Overcommitted → Medium,
+- Centered / Leaning / Reaching → Tight.
+
+The captured window remains authoritative for that attempt even if the defender's placeholder visual state changes before release.
+
+### Why
+
+The Source of Truth says the hard basketball work happens before the finish: the player creates advantage, then the finish timing cashes it out.
+
+Capturing defender advantage at finish commitment preserves that cause/effect relationship. Keeping the target on the shared rhythm clock prevents finishes from becoming a separate timing minigame disconnected from Bounce Theory's musical foundation.
