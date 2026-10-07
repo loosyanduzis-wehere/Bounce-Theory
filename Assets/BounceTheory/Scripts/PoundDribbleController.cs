@@ -689,6 +689,12 @@ namespace BounceTheory
                 return false;
             }
 
+            if (gameplayInputSuppressed)
+            {
+                lastInputDecision = "Rejected: gameplay input is suppressed during an active finish.";
+                return false;
+            }
+
             double referenceOverride = CurrentReferenceContactBeatOverride();
             if (rhythmClock != null &&
                 !rhythmClock.HasAvailableContinuationTargetAtElapsedTime(
