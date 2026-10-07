@@ -188,3 +188,24 @@ Implemented:
 - full BT-FN-01 validator.
 
 The repo remains the context package. Codex should inspect actual code/diff rather than trust this summary.
+
+
+### Next Codex pass
+
+After the current defender-interaction review is settled, Codex should work on `milestone/finishes` as one coherent feature review.
+
+Codex should:
+
+1. synchronize `milestone/finishes`,
+2. compare it against the latest accepted/verified `milestone/defender-interaction`,
+3. absorb any material parent-branch fixes without discarding finish work,
+4. run `Bounce Theory/Upgrade Prototype Scene To BT-FN-01 Core Finishes`,
+5. compile the Unity editor project,
+6. run `Bounce Theory/Validate BT-FN-01 Core Finishes`,
+7. rerun BT-DF-02/03, BT-DF-01, BT-DS-01, and representative stance/rhythm/contact regressions,
+8. fix clear material in-scope issues,
+9. rerun verification and inspect final status/diff.
+
+If executable verification succeeds, change BT-FN-01 to `AWAITING PLAYTEST`, commit, push, and stop.
+
+Do not mark COMPLETE without user Play Mode acceptance.
