@@ -229,6 +229,7 @@ namespace BounceTheory
         public int SequenceActionCount => sequenceActionCount;
 
         public event Action<BallHand> DribbleStarted;
+        public event Action<DribbleAction> DribbleActionAccepted;
         public event Action<BallHand> FloorContactReached;
         public event Action<BallHand> BallReturned;
         public event Action<TimingJudgment> TimingJudged;
@@ -723,6 +724,7 @@ namespace BounceTheory
             {
                 BallLogicalPhase sourcePhase = logicalPhase;
                 if (!BeginDribble(action, plan, simulated, acceptedStance, relation)) return false;
+                DribbleActionAccepted?.Invoke(action);
                 lastInputDecision = $"Accepted {action} from {sourcePhase} as {relation}; contact scheduled on the global grid.";
                 return true;
             }
@@ -734,6 +736,7 @@ namespace BounceTheory
                 pendingActionStance = acceptedStance;
                 pendingFollowUpRelation = relation;
                 pendingUsesSimulatedTime = simulated;
+                DribbleActionAccepted?.Invoke(action);
                 lastInputDecision = $"Accepted {action} as {relation} and queued during {logicalPhase}; contact target preserved.";
                 Log($"{action} {relation} follow-up queued — target DSP {plan.TargetContactDspTimestamp:0.000000}, {RhythmicIntervalCatalog.Label(plan.Interval)}");
                 return true;
