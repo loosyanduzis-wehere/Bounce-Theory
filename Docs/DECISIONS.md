@@ -167,3 +167,27 @@ The first defender feature reads the accepted dribble action, source hand, trans
 Bounce Theory is rhythm-first. If defender state depended on animation completion, defender timing would quietly reintroduce visual-duration authority into the gameplay loop.
 
 Using the existing dribble-state layer keeps defender behavior aligned with the same DSP/rhythm/action-decision architecture as offense.
+
+
+---
+
+## Decision 008 — Prototype Steal Pressure Is Deterministic
+
+**Status:** Active for prototype
+
+### Decision
+
+The first defender steal-pressure loop uses deterministic gameplay-state rules instead of random steal percentages.
+
+- Secure ball control is Protected.
+- Recovering ball control is Contested.
+- Exposed ball control is Vulnerable.
+- Vulnerable pressure resolves as a prototype steal.
+- Contested pressure can be escaped by a valid follow-up already accepted before floor contact; the failed reach creates Overcommitted.
+- A clean non-pound counter can then create Beaten.
+
+### Why
+
+The prototype needs to prove that rhythm quality and contextual follow-ups create readable basketball consequences before adding AI probability or difficulty tuning.
+
+Deterministic rules make cause/effect legible, testable, and compatible with the rhythm-authoritative input architecture. Final steal probability/intelligence may change later.
