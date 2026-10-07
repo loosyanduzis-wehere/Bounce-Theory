@@ -1,252 +1,171 @@
 # Bounce Theory — Implementation Status
 
 **Project status:** Active prototype  
-**Current branch:** `milestone/defender`  
-**Current task:** `BT-DF-01 — Defender Lean + Recovery Foundation`  
+**Current branch:** `milestone/defender-interaction`  
+**Current task:** `BT-DF-02/03 — Reach, Steal, Overcommit + Beaten`  
 **Task status:** `IN PROGRESS`  
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
-**Last updated:** 2026-10-06
+**Last updated:** 2026-10-07
 
-> This file is the fast current handoff. Design truth belongs in `Game Design.md`; future work belongs in `ROADMAP.md`; completed history belongs in `COMPLETED_TASKS.md`; architectural rationale belongs in `DECISIONS.md`; unresolved choices belong in `OPEN_QUESTIONS.md`; technical discoveries belong in `IMPLEMENTATION_NOTES.md`.
+> This branch is a parallel implementation branch created while Codex reviews BT-DF-01 on `milestone/defender`. It intentionally builds on the BT-DF-01 API/shape that existed at branch creation. Before final integration, absorb any material Codex fixes from the parent defender branch rather than overwriting them.
 
 ---
 
-## Current Accepted Foundation
+## Accepted Foundation
 
 - Core rhythm/contact foundation: COMPLETE.
 - Core dribble vocabulary: COMPLETE.
 - Stance milestone: PROTOTYPE COMPLETE.
 - Dribble-state milestone: PROTOTYPE COMPLETE.
-- BT-DS-01 user Play Mode verification accepted on **2026-10-06**.
-
-The defender feature should consume the existing dribble-state context rather than creating a parallel timing or action system.
+- BT-DF-01 first implementation exists and provides Centered / LeaningLeft / LeaningRight / Recovering plus timing-quality-dependent recovery.
+- Codex review of BT-DF-01 is happening independently on `milestone/defender`.
 
 ---
 
-## Active Task — BT-DF-01
+## Active Task — BT-DF-02/03
 
-**Title:** Defender Lean + Recovery Foundation  
+**Title:** Reach, Steal Opportunity, Overcommit + Beaten  
 **Status:** IN PROGRESS
 
 ### Goal
 
-Make the placeholder defender visibly and deterministically react to the dribble state so the prototype begins functioning as a basketball duel rather than a stationary dribble sandbox.
+Complete the next meaningful defender-interaction layer in one coherent chunk:
 
-This first defender feature implements readable:
+`Lean / Recover → Reach → Steal or Overcommit → Beaten`
 
-- `Centered`
-- `LeaningLeft`
-- `LeaningRight`
-- `Recovering`
+The defender should now punish poor offensive timing, miss when the offense protects a contested dribble with a valid queued response, and become exploitable after that failed reach.
 
-states only.
+### Unknowns Pass — Resolved For This Prototype
 
-### Unknowns Pass — Resolved For This Task
+- Keep defender behavior deterministic; do not introduce random steal rolls.
+- Use existing `BallControlQuality` as the first steal-opportunity input.
+- `Secure` offense is protected from automatic reach attempts.
+- `Recovering` offense creates a **contested** reach opportunity.
+- `Exposed` offense creates a **vulnerable** reach opportunity.
+- Vulnerable reach at floor contact results in a prototype steal.
+- Contested reach results in a steal unless the offense already has a valid queued follow-up accepted before floor contact.
+- Escaping a contested reach with a queued follow-up makes the defender `Overcommitted`.
+- While Overcommitted, a **Secure non-pound** action (crossover, hesitation, or behind-the-back) is treated as a successful counter and moves the defender to `Beaten`.
+- Pound may maintain possession but does not count as the prototype “counter” that beats an overcommit.
+- Overcommitted and Beaten are timed readable windows, not final animation or AI.
+- Prototype steal ends the possession through the existing possession lifecycle with a new `DefenderSteal` reason.
+- Restart clears all defender reach/overcommit/beaten state.
+- Defender root remains stationary; visual reactions remain on the defender visual pivot.
+- Do not add randomness, locomotion, scoring, finishes, shot contests, or final AI.
 
-- Defender state changes must be triggered by gameplay/dribble events, not by waiting for visual animation completion.
-- Defender root position remains stationary for this feature; readable reaction comes from body/presentation transforms.
-- Dribble source-hand presentation can induce a defender lean toward that side.
-- A hand-transfer action that resolves opposite the committed lean creates `Recovering`.
-- Offensive timing quality affects defender recovery:
-  - Secure offense → longest defender recovery,
-  - Recovering offense → medium recovery,
-  - Exposed offense → shortest recovery.
-- This encodes the Source of Truth principle that poor offensive timing gives the defender better recovery opportunity.
-- A hesitation accepted while the defender is already Recovering extends the recovery window rather than replacing it with a new lean. This is the first prototype expression of “hesitation punishes recovery.”
-- All numeric reaction distances, tilts, and durations are prototype tuning.
-- Exact AI intelligence, reach/steal logic, overcommit, beaten state, and final stance/exposure interaction remain unresolved.
+### State / Outcome Additions
 
-### Prototype State Flow
+#### Defender states
+
+- `Reaching`
+- `Overcommitted`
+- `Beaten`
+
+#### Steal opportunity
+
+- `Protected`
+- `Contested`
+- `Vulnerable`
+
+#### Reach outcome
+
+- `None`
+- `Missed`
+- `Stolen`
+
+### Prototype Flow
 
 ```text
-Centered
-  ↓ dribble starts / presented side
-LeanLeft or LeanRight
-  ↓ transfer resolves away from committed side
-Recovering
-  ↓ recovery timer
-Centered
+Secure offense
+→ no reach
+→ normal lean/recovery behavior
 
-Recovering
-  ↓ hesitation
-Recovering for longer
+Recovering offense
+→ Reaching / Contested
+→ queued valid follow-up already accepted?
+    yes → reach misses → Overcommitted
+            ↓ Secure crossover / hesitation / BTB
+          Beaten
+    no  → DefenderSteal → possession Ended
+
+Exposed offense
+→ Reaching / Vulnerable
+→ DefenderSteal → possession Ended
+
+Overcommitted
+→ timer expires → Centered
+→ or Secure non-pound counter → Beaten
+
+Beaten
+→ readable timed opening
+→ Centered
 ```
-
-### Reaction Rules
-
-#### Lean
-
-When an action begins and the defender is not already Recovering:
-
-- source hand Left → LeaningLeft,
-- source hand Right → LeaningRight.
-
-The lean is a readable placeholder reaction to the side being presented.
-
-#### Transfer resolution
-
-When crossover or behind-the-back reaches floor contact and changes ownership:
-
-- if the defender was leaning toward the source side, enter Recovering.
-
-#### Same-hand resolution
-
-Pound/hesitation do not create a transfer-recovery state by themselves.
-
-#### Timing → recovery duration
-
-Prototype mapping:
-
-- Secure → long recovery,
-- Recovering → medium recovery,
-- Exposed → short recovery.
-
-Exact values are tunable and should be serialized.
-
-#### Hesitation during recovery
-
-If hesitation begins while the defender is Recovering:
-
-- keep Recovering,
-- extend remaining recovery by a tunable amount,
-- do not introduce Overcommitted yet.
 
 ### Scope
 
-- Add a prototype defender controller/state machine.
-- Subscribe it to the existing dribble controller events/state.
-- Add readable body lean/recovery visuals without moving the defender root.
-- Reset defender to Centered on possession restart.
-- Expose current defender state and recovery timing for validation/debug.
-- Add SceneBuilder upgrade/setup for the existing prototype scene.
-- Add targeted deterministic validator.
-- Preserve all accepted dribble, stance, possession, rhythm, and restart behavior.
+- Extend `PrototypeDefenderController`.
+- Add deterministic steal-opportunity classification.
+- Add readable Reaching / Overcommitted / Beaten visual states.
+- Add prototype successful-steal possession ending.
+- Reuse the existing queued-input system as the contested-reach escape condition.
+- Add counters/debug state for reach attempts, steals, overcommits, beaten results.
+- Add deterministic validator covering the complete BT-DF-02/03 loop.
+- Preserve BT-DF-01 behavior and all accepted offense/rhythm/stance behavior.
 
 ### Success Criteria
 
-- [ ] Defender starts Centered.
-- [ ] Left-source action produces LeaningLeft.
-- [ ] Right-source action produces LeaningRight.
-- [ ] Defender root position remains unchanged.
-- [ ] Crossover/BTB resolving away from a committed lean enters Recovering.
-- [ ] Secure offensive control produces longer recovery than Recovering control.
-- [ ] Recovering control produces longer recovery than Exposed control.
-- [ ] Hesitation during Recovering extends recovery.
-- [ ] Recovery returns to Centered.
-- [ ] Possession restart immediately resets defender to Centered.
-- [ ] Existing dribble-state, stance, timing, hand ownership, and restart behavior remain intact.
-- [ ] No Rigidbody, CharacterController, navigation, reach, steal, overcommit, beaten, scoring, or finish logic is introduced.
+- [ ] Secure action does not trigger Reaching.
+- [ ] Recovering-quality action triggers Reaching with Contested opportunity.
+- [ ] Exposed-quality action triggers Reaching with Vulnerable opportunity.
+- [ ] Vulnerable reach resolves to DefenderSteal at floor contact.
+- [ ] Contested reach without queued follow-up resolves to DefenderSteal.
+- [ ] Contested reach with a valid queued follow-up misses and creates Overcommitted.
+- [ ] Queued input is preserved when the reach misses.
+- [ ] Secure crossover / hesitation / BTB during Overcommitted creates Beaten.
+- [ ] Pound does not create Beaten.
+- [ ] Overcommitted times out to Centered.
+- [ ] Beaten times out to Centered.
+- [ ] Restart clears reach opportunity/outcome/timers and returns Centered.
+- [ ] Defender root remains stationary.
+- [ ] Existing BT-DF-01 lean/recovery behavior still works.
+- [ ] Existing BT-DS-01, stance, rhythm, and contact behavior remains intact.
 
 ### Out of Scope
 
-Do not implement:
+Do not add:
 
-- Reaching,
-- steals,
-- Overcommitted,
-- Beaten,
+- random steal percentages,
+- difficulty-specific defender intelligence,
 - defender locomotion/pathfinding,
 - shot contest,
-- finish windows,
+- finish triggers,
 - scoring,
-- final defender AI,
-- final animation,
-- final stance/exposure rules.
+- final stance-based steal math,
+- animation-driven authority,
+- final foul/travel/gather rules,
+- polished character animation.
 
 ### Verification Plan
 
-Automated / executable:
+Automated / executable after integration with latest BT-DF-01 fixes:
 
 - [ ] Unity editor project compiles.
-- [ ] Scene upgrade attaches/configures the defender controller.
-- [ ] Targeted BT-DF-01 validator covers Centered/LeanLeft/LeanRight/Recovering.
-- [ ] Validator proves root position remains fixed.
-- [ ] Validator proves ordered recovery durations by offensive control quality.
-- [ ] Validator proves hesitation extends an active recovery.
-- [ ] Validator proves restart returns Centered.
-- [ ] Representative BT-DS-01 / stance / rhythm/contact regressions pass.
-- [ ] Final diff contains no unrelated changes.
+- [ ] Run the existing BT-DF-01 scene upgrade if needed.
+- [ ] Run the new BT-DF-02/03 defender interaction validator.
+- [ ] Run BT-DF-01 validator.
+- [ ] Run BT-DS-01 complete dribble-state validator.
+- [ ] Run representative stance/rhythm/contact regressions.
+- [ ] Confirm no unrelated changes.
 
-User/manual after Codex:
+Manual after Codex:
 
-- [ ] Defender lean is obvious enough to read.
-- [ ] Transfer → recovery reads coherently.
-- [ ] Hesitation during recovery visibly feels like it freezes/punishes recovery.
-- [ ] Existing dribbling still feels responsive.
-- [ ] Restart resets both ball state and defender.
+- [ ] Reach is visually readable.
+- [ ] Poor timing visibly creates defensive danger.
+- [ ] Queuing a response during a contested reach feels like escaping pressure.
+- [ ] Failed reach → Overcommitted reads clearly.
+- [ ] Clean counter → Beaten reads clearly.
+- [ ] Steal ending/restart feels coherent enough for prototype use.
+- [ ] Existing dribble responsiveness remains intact.
 
-Do not mark COMPLETE until user Play Mode verification is accepted.
-
-
----
-
-## Upcoming Defender Features — Review Only
-
-These are the intended next coherent chunks after BT-DF-01. They are **not** part of the current implementation/review scope unless explicitly promoted later.
-
-### BT-DF-02 — Defender Reach + Steal Opportunity
-
-Purpose:
-
-- add a readable `Reaching` state,
-- use existing ball-control quality as the first steal-opportunity input,
-- `Exposed` → strongest steal opportunity,
-- `Recovering` → smaller steal opportunity,
-- `Secure` → largely protected,
-- keep Overcommitted / Beaten / scoring / finishes out of scope.
-
-### BT-DF-03 — Defender Overcommit + Beaten State
-
-Purpose:
-
-- add `Overcommitted` after a failed/bad reach or strong offensive counter,
-- transition to `Beaten` when the offense successfully exploits that mistake,
-- preserve rhythm/game-state authority rather than animation completion,
-- keep finish execution and scoring in later milestones.
-
-Intended progression:
-
-`Lean → Recover → Reach → Overcommit → Beaten`
-
-Codex may flag architectural conflicts or hidden coupling these planned chunks would create while reviewing BT-DF-01, but should **not implement them during BT-DF-01 review**.
-
----
-
-## GitHub Implementation Handoff
-
-**ChatGPT first implementation:** COMPLETE FOR HANDOFF  
-**Executable verification:** NOT YET CLAIMED  
-**Task status remains:** IN PROGRESS
-
-Implemented:
-
-- `PrototypeDefenderController.cs` + Unity metadata,
-- Centered / LeaningLeft / LeaningRight / Recovering state machine,
-- source-hand lean reactions,
-- transfer-at-floor-contact recovery,
-- Secure / Recovering / Exposed ordered recovery timing,
-- hesitation recovery extension,
-- possession-restart reset event,
-- defender visual pivot scene upgrade,
-- targeted BT-DF-01 validator.
-
-### Codex next action
-
-Use `AGENTS.md` and this current task as the assignment.
-
-Codex should:
-
-1. synchronize `milestone/defender`,
-2. inspect the actual diff from `milestone/dribble-state`,
-3. run the BT-DF-01 scene upgrade so the scene/component serialization is real,
-4. compile the Unity editor project,
-5. run `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`,
-6. run `Bounce Theory/Validate BT-DS-01 Complete Dribble State` and relevant stance/rhythm/contact regressions,
-7. fix clear material in-scope issues,
-8. rerun verification,
-9. review final Git status/diff and commit/push scoped changes.
-
-If executable verification succeeds, change BT-DF-01 to `AWAITING PLAYTEST` and stop for user Play Mode verification.
-
-Do not mark COMPLETE without user acceptance.
+Do not mark COMPLETE without user Play Mode acceptance.
