@@ -17,6 +17,7 @@
 - **Bounce resolution:** exact final rules for gather, mishandle, exposed ball, travel, double-dribble, and legal intentional pauses remain unresolved. The prototype may end a possession when a new dribble is attempted after the current finite rhythmic continuation window is exhausted; this is a testing rule, not the final basketball interpretation.
 - **Possession-end causes:** beyond the provisional expired-continuation case, decide which future events end a possession (steal, mishandle, gather, violation, made/missed finish, etc.) and which merely change state.
 - **Final defender model:** Centered / lean / recovery / reach / overcommit / beaten now have provisional prototype rules. Final anticipation/intelligence, random-vs-deterministic steal tuning, stance sensitivity, foul behavior, exact reach windows, recovery tuning, and how Beaten feeds finishes remain open.
+- **Final finish model:** BT-FN-01 uses a two-stage commit/release prototype with Q/E/F, whole-beat targets, and defender-state window tiers. Final per-finish timing curves, spatial contest math, mid-bounce finish queueing, stance effects, difficulty effects, make/miss semantics, ball/rim presentation, and exact animation timing remain open.
 
 ## Rhythm / Tuning Questions
 
