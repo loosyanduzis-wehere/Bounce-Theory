@@ -81,3 +81,10 @@ A queued relation is captured when the input is accepted and must not be recompu
 - Do not refactor it merely for cleanliness during active gameplay prototyping.
 - Separate scene construction, upgrade logic, and validation later as maintenance work.
 - Gameplay/visual/feel work still requires user Play Mode acceptance even when compile/validators pass.
+
+## BT-DS-01 Fresh-Context Verification
+
+- The consolidated Unity validator initially exposed that a queued action could be accepted and judged, then discarded when the visual handoff reapplied the prototype maximum-speed heuristic. Queued actions now preserve gameplay authority and use compressed prototype motion when needed; a genuinely passed queued target is rejected and ends the prototype possession instead of disappearing silently.
+- An attempted continuation beyond the finite `2.0-beat` vocabulary now reports both `ContinuationWindowExpired` possession end and an explicit `Unreachable` motion outcome, preserving the existing contact-scheduling diagnostic contract.
+- `BT-DS-01 Complete Dribble State` passes after the fixes, including representative stance-profile, pound, crossover, hesitation, behind-the-back, queued-input, rhythm, and target-contact regressions.
+- The C# editor project compiles with zero errors. The remaining warnings are pre-existing Unity API obsolescence warnings in editor validation code.

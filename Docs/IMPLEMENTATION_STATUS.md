@@ -3,7 +3,7 @@
 **Project status:** Active prototype  
 **Current branch:** `milestone/dribble-state`  
 **Current task:** `BT-DS-01 — Complete Prototype Dribble-State Milestone`  
-**Task status:** `IN PROGRESS` — ChatGPT/GitHub implementation finished; Codex executable verification is next  
+**Task status:** `AWAITING PLAYTEST` — Codex executable verification passed; user Play Mode verification is next
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
 **Last updated:** 2026-10-06
@@ -66,7 +66,7 @@ Hand ownership and transfer behavior remain part of the shared rhythm/contact pa
 ## 2. Active Task — BT-DS-01
 
 **Title:** Complete Prototype Dribble-State Milestone  
-**Status:** IN PROGRESS
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 
@@ -150,25 +150,15 @@ The full documented BT-DS-01 implementation is committed on `milestone/dribble-s
 
 ChatGPT performed repository/diff review but did **not** claim Unity compilation or executable validation.
 
-### Codex — next action
+### Codex — executable verification complete
 
-Codex should act as the fresh-context reviewer/fixer/verifier:
+**State:** PASSED 2026-10-06
 
-1. Follow `AGENTS.md` branch-safety rules.
-2. Read this file and relevant supporting docs.
-3. Inspect the actual feature diff and surrounding code.
-4. Compile the Unity project.
-5. Run:
-   `Bounce Theory/Validate BT-DS-01 Complete Dribble State`
-6. Run relevant existing rhythm/contact, dribble, and stance regressions.
-7. Fix clear material in-scope issues directly.
-8. Rerun verification after fixes.
-9. Review final `git status` / diff and confirm unrelated files are unchanged.
-10. If executable verification succeeds, change this task to `AWAITING PLAYTEST`, commit, push, and stop.
+Codex inspected the feature diff and surrounding code, compiled the Unity project, ran the complete BT-DS-01 validator and representative regressions, repaired queued-action authority and expired-target reporting issues, and reran verification successfully.
 
 Do **not** mark BT-DS-01 complete from automated verification alone.
 
-### Intended validator coverage
+### Verified validator coverage
 
 - Active → Ended → Restart → Active.
 - Waiting alone does not end possession.

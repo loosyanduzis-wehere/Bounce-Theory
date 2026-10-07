@@ -613,7 +613,9 @@ namespace BounceTheory
             pendingPlainSpace = false;
             pendingPlainSpaceDeadline = 0f;
             spaceModifierConsumed = false;
-            lastInputDecision = $"Possession ended: {possessionEndReason}.";
+            lastInputDecision = possessionEndReason == PossessionEndReason.ContinuationWindowExpired
+                ? "Rejected: continuation target is unreachable; possession ended (ContinuationWindowExpired)."
+                : $"Possession ended: {possessionEndReason}.";
             Log(lastInputDecision);
         }
 
@@ -674,6 +676,7 @@ namespace BounceTheory
                 !rhythmClock.HasAvailableContinuationTargetAtElapsedTime(
                     elapsed, minimumReadableContactApproachTime, referenceOverride))
             {
+                motionMode = BounceMotionMode.Unreachable;
                 EndPossession(PossessionEndReason.ContinuationWindowExpired);
                 return false;
             }
@@ -740,7 +743,7 @@ namespace BounceTheory
         }
 
         private bool BeginDribble(DribbleAction action, ContactTimingPlan plan, bool simulated,
-            PlayerStance acceptedStance, FollowUpRelation followUpRelation)
+            PlayerStance acceptedStance, FollowUpRelation followUpRelation, bool wasAcceptedPending = false)
         {
             BallHand sourceHand = currentHand;
             bool transfersHand = action == DribbleAction.Crossover || action == DribbleAction.BehindTheBack;
@@ -784,7 +787,10 @@ namespace BounceTheory
             double movementTime = action == DribbleAction.Hesitation
                 ? remaining * Math.Max(.1, 1.0 - HesitationHoldFractionFor(acceptedStance) * .5)
                 : remaining;
-            if (remaining < minimumReadableContactApproachTime || requiredDistance / Math.Max(.001, movementTime) > maximumDescentSpeed)
+            bool exceedsPrototypeSpeed = requiredDistance / Math.Max(.001, movementTime) > maximumDescentSpeed;
+            // A queued action was already accepted and judged at keypress time. Preserve that gameplay
+            // authority and compress its prototype motion instead of dropping it during visual handoff.
+            if (remaining < minimumReadableContactApproachTime || (exceedsPrototypeSpeed && !wasAcceptedPending))
             {
                 motionMode = BounceMotionMode.Unreachable;
                 lastInputDecision = remaining <= 0
@@ -802,7 +808,7 @@ namespace BounceTheory
             activeFollowUpRelation = followUpRelation;
             activeSourceHand = sourceHand;
             activeTargetHand = targetHand;
-            motionMode = remaining < ReferenceDescentDuration * .9 || startPosition.y < minimumFastBounceHeight
+            motionMode = exceedsPrototypeSpeed || remaining < ReferenceDescentDuration * .9 || startPosition.y < minimumFastBounceHeight
                 ? BounceMotionMode.Compressed
                 : BounceMotionMode.Normal;
             ApplyTimingProfile(plan.Judgment.Result);
@@ -1074,11 +1080,17 @@ namespace BounceTheory
             FollowUpRelation relation = pendingFollowUpRelation;
             bool simulated = pendingUsesSimulatedTime;
             ClearPendingInput();
-            if (BeginDribble(action, plan, simulated, acceptedStance, relation))
+            if (BeginDribble(action, plan, simulated, acceptedStance, relation, true))
             {
                 lastInputDecision = "Queued input executing without rejudgment; original contact target preserved.";
                 return true;
             }
+            double nowDsp = simulated
+                ? (rhythmClock != null ? rhythmClock.StartDspTime + simulatedElapsedCursor : simulatedElapsedCursor)
+                : AudioSettings.dspTime;
+            if (possessionState == PossessionState.Active &&
+                plan.TargetContactDspTimestamp - nowDsp < minimumReadableContactApproachTime)
+                EndPossession(PossessionEndReason.ContinuationWindowExpired);
             return false;
         }
 
