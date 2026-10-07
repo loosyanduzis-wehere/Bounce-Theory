@@ -415,6 +415,12 @@ Possible finishes include:
 - Dunk
 - Other unlocked finishes
 
+Prototype finish controls:
+
+- **Q = Shot**
+- **E = Stepback**
+- **F = Drive**
+
 Finishes are primarily **animation-driven timing events**, not full basketball simulations.
 
 ### Green window concept
