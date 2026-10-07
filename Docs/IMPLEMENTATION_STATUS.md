@@ -19,8 +19,8 @@
 - Stance milestone: PROTOTYPE COMPLETE.
 - Dribble-state milestone: PROTOTYPE COMPLETE.
 - BT-DF-01 provides Centered / LeaningLeft / LeaningRight / Recovering plus timing-quality-dependent recovery.
-- Codex executable verification for BT-DF-01 passed on `milestone/defender` on 2026-10-07; BT-DF-01 is awaiting user Play Mode acceptance.
-- The verified BT-DF-01 accepted-action timing fix and serialized scene setup have been merged into this branch.
+- BT-DF-01 passed Codex executable verification and user Play Mode verification on **2026-10-07**.
+- The verified/user-accepted BT-DF-01 accepted-action timing fix and serialized scene setup are merged into this branch.
 
 ---
 
