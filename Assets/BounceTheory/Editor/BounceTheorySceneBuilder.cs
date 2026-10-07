@@ -1780,6 +1780,262 @@ namespace BounceTheory.Editor
             Debug.Log("BT-DF-01 validation passed: defender starts Centered; left/right source actions create readable lean states; transfer resolution creates timing-quality-dependent Recovering; hesitation extends active recovery; recovery and possession restart return Centered; defender root, offense, and camera remain stationary.");
         }
 
+        [MenuItem("Bounce Theory/Validate BT-DF-02-03 Defender Interaction")]
+        public static void ValidateDefenderReachOvercommitBeaten()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var errors = new List<string>();
+            GameObject offense = Required("OffensivePlayer", errors);
+            GameObject defender = Required("Defender", errors);
+            GameObject ball = Required("Basketball", errors);
+            GameObject cameraObject = Required("Main Camera", errors);
+            Transform prototype = GameObject.Find("BounceTheoryPrototype")?.transform;
+            RhythmClock clock = prototype ? prototype.Find("RhythmClock")?.GetComponent<RhythmClock>() : null;
+            PoundDribbleController controller = ball ? ball.GetComponent<PoundDribbleController>() : null;
+            PrototypeDefenderController defenderController =
+                defender ? defender.GetComponent<PrototypeDefenderController>() : null;
+            Transform visualRoot = defender ? defender.transform.Find("DefenderReactionVisual") : null;
+
+            if (!clock) errors.Add("Reusable RhythmClock is missing.");
+            if (!controller) errors.Add("PoundDribbleController is missing.");
+            if (!defenderController) errors.Add("PrototypeDefenderController is missing; run the BT-DF-01 scene upgrade.");
+            if (!visualRoot) errors.Add("DefenderReactionVisual is missing; run the BT-DF-01 scene upgrade.");
+            if (UnityEngine.Object.FindAnyObjectByType<Rigidbody>()) errors.Add("A Rigidbody was introduced.");
+            if (UnityEngine.Object.FindAnyObjectByType<CharacterController>()) errors.Add("A CharacterController was introduced.");
+
+            if (clock && controller && defenderController && visualRoot && offense && defender && cameraObject)
+            {
+                Vector3 offensePosition = offense.transform.position;
+                Vector3 defenderPosition = defender.transform.position;
+                Vector3 cameraPosition = cameraObject.transform.position;
+                Quaternion cameraRotation = cameraObject.transform.rotation;
+                BallHand originalStartingHand = controller.StartingHand;
+
+                defenderController.Configure(controller, visualRoot);
+                controller.SetStartingHand(BallHand.Left);
+
+                if (PrototypeDefenderController.StealOpportunityFor(BallControlQuality.Secure) !=
+                    StealOpportunity.Protected)
+                    errors.Add("Secure control must map to Protected steal opportunity.");
+                if (PrototypeDefenderController.StealOpportunityFor(BallControlQuality.Recovering) !=
+                    StealOpportunity.Contested)
+                    errors.Add("Recovering control must map to Contested steal opportunity.");
+                if (PrototypeDefenderController.StealOpportunityFor(BallControlQuality.Exposed) !=
+                    StealOpportunity.Vulnerable)
+                    errors.Add("Exposed control must map to Vulnerable steal opportunity.");
+
+                // Secure offense stays protected and uses the existing lean behavior.
+                controller.RestartPossession();
+                double perfectInput = FirstPerfectInputElapsed(clock, controller);
+                if (!controller.ProcessInputAtRhythmTime(true, false, perfectInput))
+                    errors.Add("Secure setup pound was not accepted.");
+                else
+                {
+                    if (controller.ActiveControlQuality != BallControlQuality.Secure)
+                        errors.Add("Perfect setup action did not expose Secure control quality.");
+                    if (defenderController.CurrentState == DefenderState.Reaching)
+                        errors.Add("Secure action incorrectly triggered a defender reach.");
+                    if (defenderController.CurrentStealOpportunity != StealOpportunity.Protected)
+                        errors.Add("Secure action did not remain Protected.");
+                }
+
+                // Recovering-quality offense creates a contested reach; without a queued answer it is stolen.
+                controller.RestartPossession();
+                double recoveringInput = FirstPerfectInputElapsed(clock, controller) + .045;
+                int stealsBefore = defenderController.StealCount;
+                if (!controller.ProcessInputAtRhythmTime(true, false, recoveringInput))
+                {
+                    errors.Add("Recovering-quality setup pound was not accepted.");
+                }
+                else
+                {
+                    if (controller.ActiveControlQuality != BallControlQuality.Recovering)
+                        errors.Add("45 ms timing offset did not produce Recovering control quality.");
+                    if (defenderController.CurrentState != DefenderState.Reaching ||
+                        defenderController.CurrentStealOpportunity != StealOpportunity.Contested)
+                        errors.Add("Recovering control did not create a Contested Reaching state.");
+
+                    for (int i = 0; i < 500 &&
+                         controller.CurrentPossessionState == PossessionState.Active; i++)
+                    {
+                        controller.Tick(.005f);
+                        defenderController.Tick(.005f);
+                    }
+
+                    if (controller.CurrentPossessionState != PossessionState.Ended ||
+                        controller.CurrentPossessionEndReason != PossessionEndReason.DefenderSteal)
+                        errors.Add("Unprotected Contested reach did not end with DefenderSteal.");
+                    if (defenderController.LastReachOutcome != DefenderReachOutcome.Stolen ||
+                        defenderController.StealCount != stealsBefore + 1)
+                        errors.Add("Contested steal did not record a Stolen reach outcome.");
+                }
+
+                // Vulnerable offense is stolen even if a follow-up has already been queued.
+                controller.RestartPossession();
+                double exposedInput = FirstPerfectInputElapsed(clock, controller) + .070;
+                stealsBefore = defenderController.StealCount;
+                if (!controller.ProcessInputAtRhythmTime(true, false, exposedInput))
+                {
+                    errors.Add("Exposed-quality setup pound was not accepted.");
+                }
+                else
+                {
+                    if (controller.ActiveControlQuality != BallControlQuality.Exposed)
+                        errors.Add("70 ms timing offset did not produce Exposed control quality.");
+                    if (defenderController.CurrentState != DefenderState.Reaching ||
+                        defenderController.CurrentStealOpportunity != StealOpportunity.Vulnerable)
+                        errors.Add("Exposed control did not create a Vulnerable Reaching state.");
+
+                    double queuedInput = PerfectHalfBeatFollowUpElapsed(clock, controller);
+                    if (!controller.ProcessHesitationInputAtRhythmTime(true, false, queuedInput) ||
+                        !controller.HasPendingInput)
+                        errors.Add("Vulnerable reach test could not queue a valid follow-up before floor contact.");
+
+                    for (int i = 0; i < 500 &&
+                         controller.CurrentPossessionState == PossessionState.Active; i++)
+                    {
+                        controller.Tick(.005f);
+                        defenderController.Tick(.005f);
+                    }
+
+                    if (controller.CurrentPossessionEndReason != PossessionEndReason.DefenderSteal ||
+                        defenderController.StealCount != stealsBefore + 1)
+                        errors.Add("Vulnerable reach was escaped even though Exposed must be stolen.");
+                    if (controller.HasPendingInput)
+                        errors.Add("Successful defender steal did not clear the queued offensive input.");
+                }
+
+                // Contested reach + accepted queued answer must miss and create Overcommitted.
+                controller.RestartPossession();
+                recoveringInput = FirstPerfectInputElapsed(clock, controller) + .045;
+                int overBefore = defenderController.OvercommitCount;
+                int beatenBefore = defenderController.BeatenCount;
+                if (!controller.ProcessInputAtRhythmTime(true, false, recoveringInput))
+                {
+                    errors.Add("Overcommit setup pound was not accepted.");
+                }
+                else
+                {
+                    double queuedInput = PerfectHalfBeatFollowUpElapsed(clock, controller);
+                    if (!controller.ProcessHesitationInputAtRhythmTime(true, false, queuedInput))
+                    {
+                        errors.Add("Contested reach escape hesitation was not accepted.");
+                    }
+                    else
+                    {
+                        if (!controller.HasPendingInput)
+                            errors.Add("Contested reach escape was not preserved in the pending slot.");
+                        if (PoundDribbleController.ControlQualityFor(
+                                controller.PendingTimingJudgment.Result) != BallControlQuality.Secure)
+                            errors.Add("Queued counter used for overcommit validation was not Secure.");
+
+                        int dribblesBefore = controller.CompletedDribbleCount;
+                        for (int i = 0; i < 500 &&
+                             controller.CompletedDribbleCount == dribblesBefore; i++)
+                        {
+                            controller.Tick(.005f);
+                            defenderController.Tick(.005f);
+                        }
+
+                        if (defenderController.CurrentState != DefenderState.Overcommitted ||
+                            defenderController.LastReachOutcome != DefenderReachOutcome.Missed)
+                            errors.Add("Protected Contested reach did not miss into Overcommitted.");
+                        if (defenderController.OvercommitCount != overBefore + 1)
+                            errors.Add("Overcommit result was not counted.");
+                        if (!controller.HasPendingInput)
+                            errors.Add("Missed reach incorrectly discarded the queued offensive response.");
+
+                        for (int i = 0; i < 500 &&
+                             controller.ActiveAction != DribbleAction.Hesitation; i++)
+                        {
+                            controller.Tick(.005f);
+                            defenderController.Tick(.005f);
+                        }
+
+                        if (controller.ActiveAction != DribbleAction.Hesitation ||
+                            controller.ActiveControlQuality != BallControlQuality.Secure)
+                            errors.Add("Queued Secure hesitation did not execute after the missed reach.");
+                        if (defenderController.CurrentState != DefenderState.Beaten ||
+                            defenderController.BeatenCount != beatenBefore + 1)
+                            errors.Add("Secure non-pound counter during Overcommitted did not create Beaten.");
+
+                        defenderController.Tick(defenderController.BeatenSeconds + .05f);
+                        if (defenderController.CurrentState != DefenderState.Centered)
+                            errors.Add("Beaten state did not time out to Centered.");
+                    }
+                }
+
+                // Pound can save the dribble but does not count as the counter that beats an overcommit.
+                controller.RestartPossession();
+                recoveringInput = FirstPerfectInputElapsed(clock, controller) + .045;
+                if (controller.ProcessInputAtRhythmTime(true, false, recoveringInput))
+                {
+                    double queuedInput = PerfectHalfBeatFollowUpElapsed(clock, controller);
+                    if (controller.ProcessInputAtRhythmTime(true, false, queuedInput))
+                    {
+                        int dribblesBefore = controller.CompletedDribbleCount;
+                        for (int i = 0; i < 500 &&
+                             controller.CompletedDribbleCount == dribblesBefore; i++)
+                        {
+                            controller.Tick(.005f);
+                            defenderController.Tick(.005f);
+                        }
+
+                        for (int i = 0; i < 500 &&
+                             controller.ActiveAction != DribbleAction.Pound; i++)
+                        {
+                            controller.Tick(.005f);
+                            defenderController.Tick(.005f);
+                        }
+
+                        if (defenderController.CurrentState == DefenderState.Beaten)
+                            errors.Add("Pound incorrectly counted as an overcommit-breaking counter.");
+
+                        defenderController.Tick(defenderController.OvercommitSeconds + .05f);
+                        if (defenderController.CurrentState != DefenderState.Centered)
+                            errors.Add("Overcommitted state did not time out to Centered without a valid counter.");
+                    }
+                }
+
+                // Restart clears any active reach/overcommit/beaten state and prototype outcome context.
+                controller.RestartPossession();
+                exposedInput = FirstPerfectInputElapsed(clock, controller) + .070;
+                if (controller.ProcessInputAtRhythmTime(true, false, exposedInput))
+                {
+                    if (defenderController.CurrentState != DefenderState.Reaching)
+                        errors.Add("Restart-reset setup failed to enter Reaching.");
+                    controller.RestartPossession();
+                    if (defenderController.CurrentState != DefenderState.Centered ||
+                        defenderController.CurrentStealOpportunity != StealOpportunity.Protected ||
+                        defenderController.LastReachOutcome != DefenderReachOutcome.None)
+                        errors.Add("Possession restart did not clear defender interaction state.");
+                }
+
+                controller.SetStartingHand(originalStartingHand);
+                controller.RestartPossession();
+
+                AssertStill("OffensivePlayer", offensePosition, offense.transform.position, errors);
+                AssertStill("Defender", defenderPosition, defender.transform.position, errors);
+                AssertStill("Main Camera", cameraPosition, cameraObject.transform.position, errors);
+                if (Quaternion.Angle(cameraRotation, cameraObject.transform.rotation) > .001f)
+                    errors.Add("Main Camera rotation changed during BT-DF-02/03 validation.");
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException("BT-DF-02/03 validation failed:\n- " +
+                                                    string.Join("\n- ", errors));
+
+            Debug.Log("BT-DF-02/03 validation passed: Secure is protected; Recovering creates Contested reach; Exposed creates Vulnerable reach; successful reaches end possession as DefenderSteal; queued responses escape Contested reaches into Overcommitted; Secure non-pound counters create Beaten; Pound does not; timed windows and restart return the defender to Centered; defender root, offense, and camera remain stationary.");
+        }
+
+        private static double PerfectHalfBeatFollowUpElapsed(RhythmClock clock,
+            PoundDribbleController controller)
+        {
+            return controller.ActiveContactPlan.TargetContactElapsedSeconds +
+                   clock.SecondsPerBeat * .5 -
+                   controller.ReferenceDescentDurationSeconds;
+        }
+
         public static void CapturePreview()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
