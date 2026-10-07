@@ -177,3 +177,44 @@ User/manual after Codex:
 - [ ] Restart resets both ball state and defender.
 
 Do not mark COMPLETE until user Play Mode verification is accepted.
+
+
+---
+
+## GitHub Implementation Handoff
+
+**ChatGPT first implementation:** COMPLETE FOR HANDOFF  
+**Executable verification:** NOT YET CLAIMED  
+**Task status remains:** IN PROGRESS
+
+Implemented:
+
+- `PrototypeDefenderController.cs` + Unity metadata,
+- Centered / LeaningLeft / LeaningRight / Recovering state machine,
+- source-hand lean reactions,
+- transfer-at-floor-contact recovery,
+- Secure / Recovering / Exposed ordered recovery timing,
+- hesitation recovery extension,
+- possession-restart reset event,
+- defender visual pivot scene upgrade,
+- targeted BT-DF-01 validator.
+
+### Codex next action
+
+Use `AGENTS.md` and this current task as the assignment.
+
+Codex should:
+
+1. synchronize `milestone/defender`,
+2. inspect the actual diff from `milestone/dribble-state`,
+3. run the BT-DF-01 scene upgrade so the scene/component serialization is real,
+4. compile the Unity editor project,
+5. run `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`,
+6. run `Bounce Theory/Validate BT-DS-01 Complete Dribble State` and relevant stance/rhythm/contact regressions,
+7. fix clear material in-scope issues,
+8. rerun verification,
+9. review final Git status/diff and commit/push scoped changes.
+
+If executable verification succeeds, change BT-DF-01 to `AWAITING PLAYTEST` and stop for user Play Mode verification.
+
+Do not mark COMPLETE without user acceptance.
