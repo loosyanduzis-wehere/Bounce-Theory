@@ -270,4 +270,37 @@ The dribble-state context is now ready to drive the defender prototype. Final co
 
 ---
 
+## BT-DF-01 — Defender Lean + Recovery Foundation
+
+**Completed:** 2026-10-07  
+**Milestone:** Defender
+
+### Result
+
+The prototype defender now reacts to authoritative dribble/gameplay state with readable Centered, LeaningLeft, LeaningRight, and Recovering states while keeping the defender root stationary.
+
+Key behavior includes:
+
+- source-hand presentation produces left/right defender lean,
+- crossover and behind-the-back transfer resolution can create Recovering,
+- offensive control quality affects defender recovery duration,
+- Secure offense creates the longest defender recovery,
+- Recovering offense creates a shorter recovery,
+- Exposed offense creates the shortest recovery,
+- hesitation accepted during Recovering extends the recovery window at command time,
+- possession restart resets the defender to Centered,
+- defender reactions consume gameplay state rather than animation completion.
+
+### Verification
+
+Codex compiled the Unity editor project, ran the BT-DF-01 scene upgrade, repaired hesitation recovery so it responds at accepted command time rather than delayed visual execution, and passed the targeted BT-DF-01 validator plus BT-DS-01 and representative stance/rhythm/contact regressions.
+
+User Play Mode verification was accepted on **2026-10-07**.
+
+### Follow-Up
+
+The accepted lean/recovery foundation is the base for the larger defender-interaction chunk: Reach, Steal Opportunity, Overcommit, and Beaten.
+
+---
+
 <!-- Append newly confirmed COMPLETE tasks below this line. -->
