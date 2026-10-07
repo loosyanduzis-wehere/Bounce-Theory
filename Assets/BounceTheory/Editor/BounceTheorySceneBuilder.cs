@@ -1732,6 +1732,10 @@ namespace BounceTheory.Editor
                     }
                     else
                     {
+                        float durationAfterAcceptance = defenderController.RecoveryDuration;
+                        if (durationAfterAcceptance <= durationBeforeHesitation)
+                            errors.Add("Accepted hesitation did not extend defender recovery immediately at command time.");
+
                         for (int i = 0; i < 500 &&
                              controller.ActiveAction != DribbleAction.Hesitation; i++)
                         {
@@ -1741,8 +1745,8 @@ namespace BounceTheory.Editor
 
                         if (controller.ActiveAction != DribbleAction.Hesitation)
                             errors.Add("Accepted hesitation did not begin while defender recovery was active.");
-                        else if (defenderController.RecoveryDuration <= durationBeforeHesitation)
-                            errors.Add("Hesitation during Recovering did not extend defender recovery.");
+                        else if (Math.Abs(defenderController.RecoveryDuration - durationAfterAcceptance) > .001f)
+                            errors.Add("Hesitation recovery extension was applied again when visual execution began.");
                     }
 
                     defenderController.Tick(defenderController.RecoveryRemaining + .05f);
