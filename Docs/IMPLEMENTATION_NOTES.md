@@ -134,4 +134,13 @@ Targeted validator:
 
 `Bounce Theory/Validate BT-DF-02-03 Defender Interaction`
 
-Current branch code has not been Unity-compiled or executable-validated by ChatGPT. The next Codex pass must rerun the combined scene upgrade, compile, run BT-DF-02/03, BT-DF-01, BT-DS-01, and representative stance/rhythm regressions.
+Codex fresh-context verification completed on **2026-10-09**:
+
+- the combined defender interaction scene upgrade completed and serialized the reach/overcommit/beaten tuning,
+- the Unity editor C# project compiled with zero errors,
+- BT-DF-02/03, BT-DF-01, and BT-DS-01 validators passed,
+- representative BT-ST-03 stance, Chunk 3 rhythm, and Chunk 4.75 target-contact regressions passed,
+- the accepted queued response remained present through contested floor contact and executed as the same authoritative command that created Beaten,
+- no clear material in-scope gameplay defect required a code change.
+
+The task remains `AWAITING PLAYTEST`; visual readability and feel still require user Play Mode acceptance.

@@ -3,10 +3,10 @@
 **Project status:** Active prototype  
 **Current branch:** `milestone/defender-interaction`  
 **Current task:** `BT-DF-02/03 — Reach, Steal, Overcommit + Beaten`  
-**Task status:** `IN PROGRESS`  
+**Task status:** `AWAITING PLAYTEST`
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
-**Last updated:** 2026-10-07
+**Last updated:** 2026-10-09
 
 > This branch is the active defender-interaction branch. BT-DF-01 passed Codex verification and user Play Mode acceptance on 2026-10-07, and that accepted checkpoint is merged into this branch.
 
@@ -116,21 +116,21 @@ Beaten
 
 ### Success Criteria
 
-- [ ] Secure action does not trigger Reaching.
-- [ ] Recovering-quality action triggers Reaching with Contested opportunity.
-- [ ] Exposed-quality action triggers Reaching with Vulnerable opportunity.
-- [ ] Vulnerable reach resolves to DefenderSteal at floor contact.
-- [ ] Contested reach without queued follow-up resolves to DefenderSteal.
-- [ ] Contested reach with a valid queued follow-up misses and creates Overcommitted.
-- [ ] Queued input is preserved when the reach misses.
-- [ ] Secure crossover / hesitation / BTB during Overcommitted creates Beaten.
-- [ ] Pound does not create Beaten.
-- [ ] Overcommitted times out to Centered.
-- [ ] Beaten times out to Centered.
-- [ ] Restart clears reach opportunity/outcome/timers and returns Centered.
-- [ ] Defender root remains stationary.
-- [ ] Existing BT-DF-01 lean/recovery behavior still works.
-- [ ] Existing BT-DS-01, stance, rhythm, and contact behavior remains intact.
+- [x] Secure action does not trigger Reaching.
+- [x] Recovering-quality action triggers Reaching with Contested opportunity.
+- [x] Exposed-quality action triggers Reaching with Vulnerable opportunity.
+- [x] Vulnerable reach resolves to DefenderSteal at floor contact.
+- [x] Contested reach without queued follow-up resolves to DefenderSteal.
+- [x] Contested reach with a valid queued follow-up misses and creates Overcommitted.
+- [x] Queued input is preserved when the reach misses.
+- [x] Secure crossover / hesitation / BTB during Overcommitted creates Beaten.
+- [x] Pound does not create Beaten.
+- [x] Overcommitted times out to Centered.
+- [x] Beaten times out to Centered.
+- [x] Restart clears reach opportunity/outcome/timers and returns Centered.
+- [x] Defender root remains stationary.
+- [x] Existing BT-DF-01 lean/recovery behavior still works.
+- [x] Existing BT-DS-01, stance, rhythm, and contact behavior remains intact.
 
 ### Out of Scope
 
@@ -151,13 +151,13 @@ Do not add:
 
 Automated / executable after integration with latest BT-DF-01 fixes:
 
-- [ ] Unity editor project compiles.
-- [ ] Run the existing BT-DF-01 scene upgrade if needed.
-- [ ] Run the new BT-DF-02/03 defender interaction validator.
-- [ ] Run BT-DF-01 validator.
-- [ ] Run BT-DS-01 complete dribble-state validator.
-- [ ] Run representative stance/rhythm/contact regressions.
-- [ ] Confirm no unrelated changes.
+- [x] Unity editor project compiles.
+- [x] Run the existing BT-DF-01 scene upgrade if needed.
+- [x] Run the new BT-DF-02/03 defender interaction validator.
+- [x] Run BT-DF-01 validator.
+- [x] Run BT-DS-01 complete dribble-state validator.
+- [x] Run representative stance/rhythm/contact regressions.
+- [x] Confirm no unrelated changes.
 
 Manual after Codex:
 
@@ -178,8 +178,8 @@ Do not mark COMPLETE without user Play Mode acceptance.
 
 **ChatGPT first implementation:** COMPLETE FOR HANDOFF  
 **BT-DF-01 verified foundation:** MERGED INTO THIS BRANCH  
-**BT-DF-02/03 executable verification:** NOT YET CLAIMED  
-**Task status remains:** IN PROGRESS
+**BT-DF-02/03 executable verification:** PASSED 2026-10-09
+**Task status remains:** AWAITING PLAYTEST
 
 Implemented in the combined chunk:
 
@@ -197,24 +197,15 @@ Implemented in the combined chunk:
 - Codex BT-DF-01 accepted-command timing fix carried forward,
 - Codex BT-DF-01 scene serialization carried forward.
 
-### Next Codex pass
+### Codex verification handoff
 
-Work on `milestone/defender-interaction`.
+- The combined defender interaction scene upgrade completed successfully.
+- The Unity editor C# project compiled with zero errors; only the existing validator API-obsolescence warnings remain.
+- BT-DF-02/03, BT-DF-01, and BT-DS-01 validators passed.
+- Representative BT-ST-03 stance, Chunk 3 rhythm, and Chunk 4.75 target-contact regressions passed.
+- Fresh-context review found no clear material in-scope gameplay defect requiring a code change.
+- The serialized scene now contains the defender reach, overcommit, and beaten tuning values.
 
-Treat this as one coherent feature review, not two micro-reviews.
-
-Codex should:
-
-1. synchronize the branch and inspect the actual diff,
-2. run `Bounce Theory/Upgrade Prototype Scene To BT-DF-02-03 Defender Interaction`,
-3. compile the Unity editor project,
-4. run `Bounce Theory/Validate BT-DF-02-03 Defender Interaction`,
-5. rerun `Bounce Theory/Validate BT-DF-01 Defender Lean Recovery`,
-6. rerun `Bounce Theory/Validate BT-DS-01 Complete Dribble State`,
-7. run representative stance/rhythm/contact regressions,
-8. fix clear material in-scope issues,
-9. rerun verification and inspect final status/diff.
-
-If executable verification succeeds, change BT-DF-02/03 to `AWAITING PLAYTEST` and stop.
+Next step: user Play Mode verification of readability and feel.
 
 Do not mark COMPLETE without user Play Mode acceptance.

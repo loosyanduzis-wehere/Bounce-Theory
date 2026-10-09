@@ -11005,6 +11005,15 @@ MonoBehaviour:
   exposedRecoverySeconds: 0.2
   hesitationRecoveryExtensionSeconds: 0.2
   maximumRecoverySeconds: 1.25
+  reachLateralOffset: 0.24
+  reachForwardOffset: 0.34
+  reachTiltDegrees: 16
+  overcommitSeconds: 0.58
+  overcommitOffset: 0.52
+  overcommitTiltDegrees: 23
+  beatenSeconds: 1.05
+  beatenOffset: 0.62
+  beatenTiltDegrees: 28
   showDebugOverlay: 1
 --- !u!1 &1424153614
 GameObject:
