@@ -11005,6 +11005,7 @@ MonoBehaviour:
   exposedRecoverySeconds: 0.2
   hesitationRecoveryExtensionSeconds: 0.2
   maximumRecoverySeconds: 1.25
+  reachCooldownSeconds: 1.15
   reachLateralOffset: 0.24
   reachForwardOffset: 0.34
   reachTiltDegrees: 16

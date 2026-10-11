@@ -120,8 +120,9 @@ Combined prototype rules:
 - Recovering offense → Contested reach.
 - Exposed offense → Vulnerable reach.
 - Vulnerable reach steals at floor contact even if another action was queued.
-- Contested reach steals if no follow-up was already accepted.
+- Contested reach without a queued follow-up misses into short defender recovery; Early/Late timing alone does not end possession.
 - Contested reach with an accepted queued follow-up misses and creates Overcommitted.
+- Reach attempts use a tunable 1.15-second cooldown, which possession restart clears.
 - A Secure crossover, hesitation, or behind-the-back that executes during Overcommitted creates Beaten.
 - Pound does not count as the overcommit-breaking counter.
 - Overcommitted and Beaten are timed readability windows.
@@ -144,3 +145,13 @@ Codex fresh-context verification completed on **2026-10-09**:
 - no clear material in-scope gameplay defect required a code change.
 
 The task remains `AWAITING PLAYTEST`; visual readability and feel still require user Play Mode acceptance.
+
+### 2026-10-11 reach-balance verification
+
+- The scene upgrade serialized `reachCooldownSeconds: 1.15` on the defender controller.
+- The revised BT-DF-02/03 validator confirms Early/Late Contested reaches miss without stealing, while BrokenRhythm/Exposed Vulnerable reaches retain deterministic steals.
+- Queued Contested responses still survive floor contact, produce Overcommitted, and allow a Secure non-pound counter to produce Beaten.
+- Restart clears defender state, reach outcome/opportunity, timers, and cooldown.
+- BT-DF-01, BT-DS-01, BT-ST-03, Chunk 3 rhythm, and Chunk 4.75 target-contact regressions pass.
+- The Unity editor C# project compiles with zero errors; the existing editor-validator API-obsolescence warnings remain.
+- Fresh-context review found no clear material in-scope runtime defect requiring a code change.

@@ -3,7 +3,7 @@
 **Project status:** Active prototype  
 **Current branch:** `milestone/defender-interaction`  
 **Current task:** `BT-DF-02/03 — Reach, Steal, Overcommit + Beaten`  
-**Task status:** `IN PROGRESS` — reach-balance fix awaiting Unity verification
+**Task status:** `AWAITING PLAYTEST`
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
 **Last updated:** 2026-10-11
@@ -27,7 +27,7 @@
 ## Active Task — BT-DF-02/03
 
 **Title:** Reach, Steal Opportunity, Overcommit + Beaten  
-**Status:** IN PROGRESS
+**Status:** AWAITING PLAYTEST
 
 ### Goal
 
@@ -122,14 +122,14 @@ Beaten
 - [x] Recovering-quality action triggers Reaching with Contested opportunity.
 - [x] Exposed-quality action triggers Reaching with Vulnerable opportunity.
 - [x] Vulnerable reach resolves to DefenderSteal at floor contact.
-- [x] Contested reach without queued follow-up misses into recovery without stealing (balance adjustment; Unity rerun pending).
-- [x] Contested reach with a valid queued follow-up misses and creates Overcommitted (reverification pending).
+- [x] Contested reach without queued follow-up misses into recovery without stealing.
+- [x] Contested reach with a valid queued follow-up misses and creates Overcommitted.
 - [x] Queued input is preserved when the reach misses.
 - [x] Secure crossover / hesitation / BTB during Overcommitted creates Beaten.
 - [x] Pound does not create Beaten.
 - [x] Overcommitted times out to Centered.
 - [x] Beaten times out to Centered.
-- [x] Restart clears reach opportunity/outcome/timers/cooldown and returns Centered (reverification pending).
+- [x] Restart clears reach opportunity/outcome/timers/cooldown and returns Centered.
 - [x] Defender root remains stationary.
 - [x] Existing BT-DF-01 lean/recovery behavior still works.
 - [x] Existing BT-DS-01, stance, rhythm, and contact behavior remains intact.
@@ -153,13 +153,13 @@ Do not add:
 
 Automated / executable after integration with latest BT-DF-01 fixes:
 
-- [ ] Unity editor project compiles.
-- [ ] Run the existing BT-DF-01 scene upgrade if needed.
-- [ ] Run the new BT-DF-02/03 defender interaction validator.
-- [ ] Run BT-DF-01 validator.
-- [ ] Run BT-DS-01 complete dribble-state validator.
-- [ ] Run representative stance/rhythm/contact regressions.
-- [ ] Confirm no unrelated changes.
+- [x] Unity editor project compiles.
+- [x] Run the existing BT-DF-01 scene upgrade if needed.
+- [x] Run the new BT-DF-02/03 defender interaction validator.
+- [x] Run BT-DF-01 validator.
+- [x] Run BT-DS-01 complete dribble-state validator.
+- [x] Run representative stance/rhythm/contact regressions.
+- [x] Confirm no unrelated changes.
 
 Manual after Codex:
 
@@ -190,7 +190,7 @@ Do not mark COMPLETE without user Play Mode acceptance.
 - Reach attempts now have a tunable **1.15 s cooldown** to avoid constant repeated interruptions; restart resets that cooldown.
 - The BT-DF-02/03 validator now checks the updated missed-reach, cooldown, queued-escape, and restart semantics.
 
-**Verification is pending:** Codex should run the Unity compile, upgraded defender interaction validator, BT-DF-01 and BT-DS-01 regressions, and representative stance/contact tests. Then mark `AWAITING PLAYTEST` if they pass and obtain a new user Play Mode assessment of whether ordinary dribbling is practical. Do not mark COMPLETE yet. No changes to `Docs/Game Design.md` are authorized by this balance pass.
+**Verification passed on 2026-10-11:** The Unity editor project compiled, the updated BT-DF-02/03 validator passed, and BT-DF-01, BT-DS-01, stance, rhythm, and target-contact regressions passed. The scene upgrade serialized the 1.15-second cooldown. A new user Play Mode assessment is still required to determine whether ordinary dribbling is practical. Do not mark COMPLETE yet. No changes to `Docs/Game Design.md` were made by this balance pass.
 
 ---
 
@@ -198,8 +198,8 @@ Do not mark COMPLETE without user Play Mode acceptance.
 
 **ChatGPT first implementation:** COMPLETE FOR HANDOFF  
 **BT-DF-01 verified foundation:** MERGED INTO THIS BRANCH  
-**BT-DF-02/03 previous executable verification:** PASSED 2026-10-09 (before the new balance fix; reverification required)
-**Task status remains:** IN PROGRESS pending updated Unity verification
+**BT-DF-02/03 balance-fix executable verification:** PASSED 2026-10-11
+**Task status remains:** AWAITING PLAYTEST
 
 Implemented in the combined chunk:
 
@@ -219,13 +219,13 @@ Implemented in the combined chunk:
 
 ### Codex verification handoff
 
-- The combined defender interaction scene upgrade completed successfully.
+- The updated defender interaction scene upgrade completed successfully and serialized the 1.15-second reach cooldown.
 - The Unity editor C# project compiled with zero errors; only the existing validator API-obsolescence warnings remain.
-- BT-DF-02/03, BT-DF-01, and BT-DS-01 validators passed.
+- The revised BT-DF-02/03 validator passed: Early/Late Contested reaches miss without stealing, Exposed Vulnerable reaches can steal, queued responses still create Overcommitted and Beaten, and restart clears the cooldown and defender state.
+- BT-DF-01 and BT-DS-01 validators passed.
 - Representative BT-ST-03 stance, Chunk 3 rhythm, and Chunk 4.75 target-contact regressions passed.
 - Fresh-context review found no clear material in-scope gameplay defect requiring a code change.
-- The serialized scene now contains the defender reach, overcommit, and beaten tuning values.
 
-Next step: Codex reruns Unity compilation and targeted/regression validators on the 2026-10-11 balance fix, then returns the task for a new user playtest.
+Next step: user Play Mode verification of ordinary dribble practicality and defender readability/feel.
 
 Do not mark COMPLETE without user Play Mode acceptance.
