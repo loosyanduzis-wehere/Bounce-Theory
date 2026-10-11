@@ -51,6 +51,7 @@ namespace BounceTheory
         [SerializeField, Min(0.1f)] private float maximumRecoverySeconds = 1.25f;
 
         [Header("Reach / Overcommit")]
+        [SerializeField, Min(0f)] private float reachCooldownSeconds = 1.15f;
         [SerializeField, Min(0f)] private float reachLateralOffset = 0.24f;
         [SerializeField, Min(0f)] private float reachForwardOffset = 0.34f;
         [SerializeField, Range(0f, 35f)] private float reachTiltDegrees = 16f;
@@ -77,6 +78,7 @@ namespace BounceTheory
         private float recoveryDuration;
         private float recoveryElapsed;
         private float stateElapsed;
+        private float reachCooldownRemaining;
         private StealOpportunity currentStealOpportunity = StealOpportunity.Protected;
         private DefenderReachOutcome lastReachOutcome = DefenderReachOutcome.None;
         private int reachAttemptCount;
@@ -94,6 +96,8 @@ namespace BounceTheory
         public float ExposedRecoverySeconds => exposedRecoverySeconds;
         public float HesitationRecoveryExtensionSeconds => hesitationRecoveryExtensionSeconds;
         public float OvercommitSeconds => overcommitSeconds;
+        public float ReachCooldownSeconds => reachCooldownSeconds;
+        public float ReachCooldownRemaining => reachCooldownRemaining;
         public float BeatenSeconds => beatenSeconds;
         public float StateElapsed => stateElapsed;
         public float StateRemaining => currentState == DefenderState.Overcommitted
@@ -133,6 +137,7 @@ namespace BounceTheory
             exposedRecoverySeconds = Mathf.Max(.05f, exposedRecoverySeconds);
             hesitationRecoveryExtensionSeconds = Mathf.Max(0f, hesitationRecoveryExtensionSeconds);
             maximumRecoverySeconds = Mathf.Max(.1f, maximumRecoverySeconds);
+            reachCooldownSeconds = Mathf.Max(0f, reachCooldownSeconds);
             reachLateralOffset = Mathf.Max(0f, reachLateralOffset);
             reachForwardOffset = Mathf.Max(0f, reachForwardOffset);
             reachTiltDegrees = Mathf.Clamp(reachTiltDegrees, 0f, 35f);
@@ -158,7 +163,9 @@ namespace BounceTheory
 
         public void Tick(float deltaTime)
         {
-            if (deltaTime <= 0f || visualRoot == null) return;
+            if (deltaTime <= 0f) return;
+            reachCooldownRemaining = Mathf.Max(0f, reachCooldownRemaining - deltaTime);
+            if (visualRoot == null) return;
 
             if (currentState == DefenderState.Recovering)
             {
@@ -207,6 +214,7 @@ namespace BounceTheory
             recoveryDuration = 0f;
             recoveryElapsed = 0f;
             stateElapsed = 0f;
+            reachCooldownRemaining = 0f;
             currentStealOpportunity = StealOpportunity.Protected;
             lastReachOutcome = DefenderReachOutcome.None;
             if (visualRoot != null)
@@ -262,7 +270,7 @@ namespace BounceTheory
                 return;
 
             StealOpportunity opportunity = StealOpportunityFor(dribbleController.ActiveControlQuality);
-            if (opportunity != StealOpportunity.Protected)
+            if (opportunity != StealOpportunity.Protected && reachCooldownRemaining <= 0f)
             {
                 BeginReach(sourceHand, opportunity);
                 return;
@@ -323,15 +331,16 @@ namespace BounceTheory
             reactionSide = sourceHand;
             hasCommitment = false;
             stateElapsed = 0f;
+            reachCooldownRemaining = reachCooldownSeconds;
             reachAttemptCount++;
         }
 
         private void ResolveReachAtFloorContact()
         {
             bool protectedByQueuedResponse = dribbleController != null && dribbleController.HasPendingInput;
-            if (currentStealOpportunity == StealOpportunity.Vulnerable ||
-                (currentStealOpportunity == StealOpportunity.Contested && !protectedByQueuedResponse))
+            if (currentStealOpportunity == StealOpportunity.Vulnerable)
             {
+                // Only broken-rhythm exposure is an immediate steal in this prototype.
                 lastReachOutcome = DefenderReachOutcome.Stolen;
                 stealCount++;
                 hasCommitment = false;
@@ -340,10 +349,20 @@ namespace BounceTheory
                 return;
             }
 
-            if (currentStealOpportunity == StealOpportunity.Contested && protectedByQueuedResponse)
+            if (currentStealOpportunity == StealOpportunity.Contested)
             {
-                lastReachOutcome = DefenderReachOutcome.Missed;
-                BeginOvercommit();
+                // Early / Late timing invites a visible reach but never an instant steal.
+                // A pre-accepted queued response still earns the stronger overcommit punish.
+                if (protectedByQueuedResponse)
+                {
+                    lastReachOutcome = DefenderReachOutcome.Missed;
+                    BeginOvercommit();
+                }
+                else
+                {
+                    BeginRecovery(BallControlQuality.Recovering);
+                    lastReachOutcome = DefenderReachOutcome.Missed;
+                }
                 return;
             }
 
@@ -501,7 +520,7 @@ namespace BounceTheory
                     ? $"Recovery: {RecoveryRemaining:0.00}s"
                     : currentState == DefenderState.Overcommitted || currentState == DefenderState.Beaten
                         ? $"Window: {StateRemaining:0.00}s"
-                        : "Window: —");
+                        : $"Reach cooldown: {reachCooldownRemaining:0.00}s");
             GUI.Label(new Rect(Screen.width - 285f, 111f, 250f, 22f),
                 $"Reach {reachAttemptCount}  Steals {stealCount}  Over {overcommitCount}  Beaten {beatenCount}");
         }
