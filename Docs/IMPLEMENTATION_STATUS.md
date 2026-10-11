@@ -3,10 +3,10 @@
 **Project status:** Active prototype  
 **Current branch:** `milestone/defender-interaction`  
 **Current task:** `BT-DF-02/03 — Reach, Steal, Overcommit + Beaten`  
-**Task status:** `AWAITING PLAYTEST`
+**Task status:** `IN PROGRESS` — reach-balance fix awaiting Unity verification
 **Design source of truth:** `Docs/Game Design.md`  
 **Project instructions:** `AGENTS.md`  
-**Last updated:** 2026-10-09
+**Last updated:** 2026-10-11
 
 > This branch is the active defender-interaction branch. BT-DF-01 passed Codex verification and user Play Mode acceptance on 2026-10-07, and that accepted checkpoint is merged into this branch.
 
@@ -42,11 +42,12 @@ The defender should now punish poor offensive timing, miss when the offense prot
 - Keep defender behavior deterministic; do not introduce random steal rolls.
 - Use existing `BallControlQuality` as the first steal-opportunity input.
 - `Secure` offense is protected from automatic reach attempts.
-- `Recovering` offense creates a **contested** reach opportunity.
+- `Recovering` offense creates a **contested** reach opportunity; the reach itself does not automatically steal.
 - `Exposed` offense creates a **vulnerable** reach opportunity.
 - Vulnerable reach at floor contact results in a prototype steal.
-- Contested reach results in a steal unless the offense already has a valid queued follow-up accepted before floor contact.
+- Contested reach **without** a valid queued follow-up misses into short defender recovery; Early/Late timing alone must not end possession.
 - Escaping a contested reach with a queued follow-up makes the defender `Overcommitted`.
+- A prototype **1.15-second reach cooldown** prevents immediate repeated reaches; restart clears it.
 - While Overcommitted, a **Secure non-pound** action (crossover, hesitation, or behind-the-back) is treated as a successful counter and moves the defender to `Beaten`.
 - Pound may maintain possession but does not count as the prototype “counter” that beats an overcommit.
 - Overcommitted and Beaten are timed readable windows, not final animation or AI.
@@ -82,13 +83,14 @@ Secure offense
 → no reach
 → normal lean/recovery behavior
 
-Recovering offense
+Recovering offense (Early/Late timing)
 → Reaching / Contested
 → queued valid follow-up already accepted?
     yes → reach misses → Overcommitted
             ↓ Secure crossover / hesitation / BTB
           Beaten
-    no  → DefenderSteal → possession Ended
+    no  → reach misses → Recovering (offense retains possession)
+→ reach cooldown prevents immediate repeat attempt
 
 Exposed offense
 → Reaching / Vulnerable
@@ -120,14 +122,14 @@ Beaten
 - [x] Recovering-quality action triggers Reaching with Contested opportunity.
 - [x] Exposed-quality action triggers Reaching with Vulnerable opportunity.
 - [x] Vulnerable reach resolves to DefenderSteal at floor contact.
-- [x] Contested reach without queued follow-up resolves to DefenderSteal.
-- [x] Contested reach with a valid queued follow-up misses and creates Overcommitted.
+- [x] Contested reach without queued follow-up misses into recovery without stealing (balance adjustment; Unity rerun pending).
+- [x] Contested reach with a valid queued follow-up misses and creates Overcommitted (reverification pending).
 - [x] Queued input is preserved when the reach misses.
 - [x] Secure crossover / hesitation / BTB during Overcommitted creates Beaten.
 - [x] Pound does not create Beaten.
 - [x] Overcommitted times out to Centered.
 - [x] Beaten times out to Centered.
-- [x] Restart clears reach opportunity/outcome/timers and returns Centered.
+- [x] Restart clears reach opportunity/outcome/timers/cooldown and returns Centered (reverification pending).
 - [x] Defender root remains stationary.
 - [x] Existing BT-DF-01 lean/recovery behavior still works.
 - [x] Existing BT-DS-01, stance, rhythm, and contact behavior remains intact.
@@ -151,13 +153,13 @@ Do not add:
 
 Automated / executable after integration with latest BT-DF-01 fixes:
 
-- [x] Unity editor project compiles.
-- [x] Run the existing BT-DF-01 scene upgrade if needed.
-- [x] Run the new BT-DF-02/03 defender interaction validator.
-- [x] Run BT-DF-01 validator.
-- [x] Run BT-DS-01 complete dribble-state validator.
-- [x] Run representative stance/rhythm/contact regressions.
-- [x] Confirm no unrelated changes.
+- [ ] Unity editor project compiles.
+- [ ] Run the existing BT-DF-01 scene upgrade if needed.
+- [ ] Run the new BT-DF-02/03 defender interaction validator.
+- [ ] Run BT-DF-01 validator.
+- [ ] Run BT-DS-01 complete dribble-state validator.
+- [ ] Run representative stance/rhythm/contact regressions.
+- [ ] Confirm no unrelated changes.
 
 Manual after Codex:
 
@@ -174,12 +176,30 @@ Do not mark COMPLETE without user Play Mode acceptance.
 
 ---
 
+## Playtest Balance Correction — 2026-10-11
+
+**User feedback:** The defender was stealing so often that the basic dribble loop was barely playable. This is a failed balance playtest; BT-DF-02/03 is not accepted.
+
+**Root cause:** Early/Late judgments produce `Recovering` control quality, which previously triggered an immediate steal at floor contact unless a valid follow-up had already been queued. That punishes an ordinary small rhythm miss as harshly as an exposed/broken-rhythm mistake.
+
+**Focused code changes on this branch:**
+
+- Unqueued **Contested** reach (Early/Late) now misses and moves into defender recovery; possession stays active.
+- Queued **Contested** reach still misses into **Overcommitted**, allowing a Secure non-pound counter to create **Beaten**.
+- **Vulnerable** reach (BrokenRhythm/Exposed) can still steal; deterministic punishment remains for major errors.
+- Reach attempts now have a tunable **1.15 s cooldown** to avoid constant repeated interruptions; restart resets that cooldown.
+- The BT-DF-02/03 validator now checks the updated missed-reach, cooldown, queued-escape, and restart semantics.
+
+**Verification is pending:** Codex should run the Unity compile, upgraded defender interaction validator, BT-DF-01 and BT-DS-01 regressions, and representative stance/contact tests. Then mark `AWAITING PLAYTEST` if they pass and obtain a new user Play Mode assessment of whether ordinary dribbling is practical. Do not mark COMPLETE yet. No changes to `Docs/Game Design.md` are authorized by this balance pass.
+
+---
+
 ## GitHub Implementation Handoff
 
 **ChatGPT first implementation:** COMPLETE FOR HANDOFF  
 **BT-DF-01 verified foundation:** MERGED INTO THIS BRANCH  
-**BT-DF-02/03 executable verification:** PASSED 2026-10-09
-**Task status remains:** AWAITING PLAYTEST
+**BT-DF-02/03 previous executable verification:** PASSED 2026-10-09 (before the new balance fix; reverification required)
+**Task status remains:** IN PROGRESS pending updated Unity verification
 
 Implemented in the combined chunk:
 
@@ -206,6 +226,6 @@ Implemented in the combined chunk:
 - Fresh-context review found no clear material in-scope gameplay defect requiring a code change.
 - The serialized scene now contains the defender reach, overcommit, and beaten tuning values.
 
-Next step: user Play Mode verification of readability and feel.
+Next step: Codex reruns Unity compilation and targeted/regression validators on the 2026-10-11 balance fix, then returns the task for a new user playtest.
 
 Do not mark COMPLETE without user Play Mode acceptance.
