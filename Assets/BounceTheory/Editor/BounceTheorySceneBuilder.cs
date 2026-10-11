@@ -1850,7 +1850,7 @@ namespace BounceTheory.Editor
                         errors.Add("Secure action did not remain Protected.");
                 }
 
-                // Recovering-quality offense creates a contested reach; without a queued answer it is stolen.
+                // Early / Late timing can draw a reach, but an unqueued Contested reach must miss.
                 controller.RestartPossession();
                 double recoveringInput = FirstPerfectInputElapsed(clock, controller) + .045;
                 int stealsBefore = defenderController.StealCount;
@@ -1866,19 +1866,26 @@ namespace BounceTheory.Editor
                         defenderController.CurrentStealOpportunity != StealOpportunity.Contested)
                         errors.Add("Recovering control did not create a Contested Reaching state.");
 
+                    int firstContactCount = controller.CompletedDribbleCount;
                     for (int i = 0; i < 500 &&
-                         controller.CurrentPossessionState == PossessionState.Active; i++)
+                         controller.CompletedDribbleCount == firstContactCount; i++)
                     {
                         controller.Tick(.005f);
                         defenderController.Tick(.005f);
                     }
 
-                    if (controller.CurrentPossessionState != PossessionState.Ended ||
-                        controller.CurrentPossessionEndReason != PossessionEndReason.DefenderSteal)
-                        errors.Add("Unprotected Contested reach did not end with DefenderSteal.");
-                    if (defenderController.LastReachOutcome != DefenderReachOutcome.Stolen ||
-                        defenderController.StealCount != stealsBefore + 1)
-                        errors.Add("Contested steal did not record a Stolen reach outcome.");
+                    if (controller.CompletedDribbleCount == firstContactCount)
+                        errors.Add("Unqueued Contested reach did not reach floor contact.");
+                    if (controller.CurrentPossessionState != PossessionState.Active ||
+                        controller.CurrentPossessionEndReason == PossessionEndReason.DefenderSteal)
+                        errors.Add("Unqueued Contested reach wrongly ended possession.");
+                    if (defenderController.LastReachOutcome != DefenderReachOutcome.Missed ||
+                        defenderController.StealCount != stealsBefore ||
+                        defenderController.CurrentState != DefenderState.Recovering)
+                        errors.Add("Unqueued Contested reach must miss and enter recovery without stealing.");
+                    if (defenderController.ReachCooldownSeconds <= 0f ||
+                        defenderController.ReachCooldownRemaining <= 0f)
+                        errors.Add("Defender reach cooldown was not started by the missed reach.");
                 }
 
                 // Vulnerable offense is stolen even if a follow-up has already been queued.
@@ -2018,8 +2025,9 @@ namespace BounceTheory.Editor
                     controller.RestartPossession();
                     if (defenderController.CurrentState != DefenderState.Centered ||
                         defenderController.CurrentStealOpportunity != StealOpportunity.Protected ||
-                        defenderController.LastReachOutcome != DefenderReachOutcome.None)
-                        errors.Add("Possession restart did not clear defender interaction state.");
+                        defenderController.LastReachOutcome != DefenderReachOutcome.None ||
+                        defenderController.ReachCooldownRemaining > 0f)
+                        errors.Add("Possession restart did not clear defender interaction state and cooldown.");
                 }
 
                 controller.SetStartingHand(originalStartingHand);
@@ -2036,7 +2044,7 @@ namespace BounceTheory.Editor
                 throw new InvalidOperationException("BT-DF-02/03 validation failed:\n- " +
                                                     string.Join("\n- ", errors));
 
-            Debug.Log("BT-DF-02/03 validation passed: Secure is protected; Recovering creates Contested reach; Exposed creates Vulnerable reach; successful reaches end possession as DefenderSteal; queued responses escape Contested reaches into Overcommitted; Secure non-pound counters create Beaten; Pound does not; timed windows and restart return the defender to Centered; defender root, offense, and camera remain stationary.");
+            Debug.Log("BT-DF-02/03 validation passed: Secure is protected; Early/Late Contested reaches miss without stealing, with a reach cooldown; Exposed Vulnerable reaches can steal; queued responses escape Contested reaches into Overcommitted; Secure non-pound counters create Beaten; Pound does not; timed windows and restart clear defender state and cooldown; defender root, offense, and camera remain stationary.");
         }
 
         private static double PerfectHalfBeatFollowUpElapsed(RhythmClock clock,
